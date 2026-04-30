@@ -1,0 +1,45 @@
+==============================
+RUN #1 - DATE: Sun Mar 22 05:22:29 PM EDT 2026
+==============================
+vit_large_patch14_reg4_dinov2.lvd142m
+  0%|          | 0/40 [00:00<?, ?it/s]  2%|▎         | 1/40 [00:04<02:41,  4.14s/it]  5%|▌         | 2/40 [00:06<01:59,  3.15s/it]  8%|▊         | 3/40 [00:09<01:47,  2.90s/it] 10%|█         | 4/40 [00:11<01:38,  2.74s/it] 12%|█▎        | 5/40 [00:14<01:34,  2.69s/it] 15%|█▌        | 6/40 [00:16<01:29,  2.62s/it] 18%|█▊        | 7/40 [00:19<01:26,  2.62s/it] 20%|██        | 8/40 [00:21<01:22,  2.58s/it] 22%|██▎       | 9/40 [00:24<01:20,  2.60s/it] 25%|██▌       | 10/40 [00:27<01:17,  2.58s/it] 28%|██▊       | 11/40 [00:29<01:15,  2.60s/it] 30%|███       | 12/40 [00:32<01:11,  2.57s/it] 32%|███▎      | 13/40 [00:34<01:09,  2.56s/it] 35%|███▌      | 14/40 [00:37<01:06,  2.55s/it] 38%|███▊      | 15/40 [00:39<01:03,  2.55s/it] 40%|████      | 16/40 [00:42<01:01,  2.55s/it] 42%|████▎     | 17/40 [00:44<00:58,  2.54s/it] 45%|████▌     | 18/40 [00:47<00:55,  2.54s/it] 48%|████▊     | 19/40 [00:49<00:53,  2.53s/it] 50%|█████     | 20/40 [00:52<00:50,  2.54s/it] 52%|█████▎    | 21/40 [00:55<00:48,  2.54s/it] 55%|█████▌    | 22/40 [00:57<00:45,  2.54s/it] 57%|█████▊    | 23/40 [01:00<00:43,  2.55s/it] 60%|██████    | 24/40 [01:02<00:40,  2.55s/it] 62%|██████▎   | 25/40 [01:05<00:38,  2.56s/it] 65%|██████▌   | 26/40 [01:07<00:35,  2.56s/it] 68%|██████▊   | 27/40 [01:10<00:33,  2.57s/it] 70%|███████   | 28/40 [01:12<00:30,  2.56s/it] 72%|███████▎  | 29/40 [01:15<00:28,  2.56s/it] 75%|███████▌  | 30/40 [01:18<00:25,  2.56s/it] 78%|███████▊  | 31/40 [01:20<00:23,  2.56s/it] 80%|████████  | 32/40 [01:23<00:20,  2.56s/it] 82%|████████▎ | 33/40 [01:25<00:17,  2.56s/it] 85%|████████▌ | 34/40 [01:28<00:15,  2.56s/it] 88%|████████▊ | 35/40 [01:30<00:12,  2.56s/it] 90%|█████████ | 36/40 [01:33<00:10,  2.56s/it] 92%|█████████▎| 37/40 [01:36<00:07,  2.56s/it] 95%|█████████▌| 38/40 [01:38<00:05,  2.57s/it] 98%|█████████▊| 39/40 [01:41<00:02,  2.57s/it]100%|██████████| 40/40 [01:43<00:00,  2.58s/it]100%|██████████| 40/40 [01:43<00:00,  2.59s/it]
+  0%|          | 0/40 [00:00<?, ?it/s]  2%|▎         | 1/40 [00:03<02:24,  3.72s/it]  5%|▌         | 2/40 [00:06<01:55,  3.04s/it]  8%|▊         | 3/40 [00:08<01:44,  2.83s/it] 10%|█         | 4/40 [00:11<01:38,  2.73s/it] 12%|█▎        | 5/40 [00:14<01:33,  2.67s/it] 15%|█▌        | 6/40 [00:16<01:29,  2.64s/it] 18%|█▊        | 7/40 [00:19<01:26,  2.62s/it] 20%|██        | 8/40 [00:21<01:23,  2.61s/it] 22%|██▎       | 9/40 [00:24<01:20,  2.60s/it] 25%|██▌       | 10/40 [00:26<01:17,  2.60s/it] 28%|██▊       | 11/40 [00:29<01:15,  2.60s/it] 30%|███       | 12/40 [00:32<01:12,  2.59s/it] 32%|███▎      | 13/40 [00:34<01:10,  2.59s/it] 35%|███▌      | 14/40 [00:37<01:07,  2.59s/it] 38%|███▊      | 15/40 [00:39<01:04,  2.59s/it] 40%|████      | 16/40 [00:42<01:02,  2.59s/it] 42%|████▎     | 17/40 [00:45<00:59,  2.59s/it] 45%|████▌     | 18/40 [00:47<00:57,  2.59s/it] 48%|████▊     | 19/40 [00:50<00:54,  2.59s/it] 50%|█████     | 20/40 [00:52<00:51,  2.60s/it] 52%|█████▎    | 21/40 [00:55<00:49,  2.60s/it] 55%|█████▌    | 22/40 [00:58<00:46,  2.60s/it] 57%|█████▊    | 23/40 [01:00<00:44,  2.60s/it] 60%|██████    | 24/40 [01:03<00:41,  2.60s/it] 62%|██████▎   | 25/40 [01:05<00:38,  2.60s/it] 65%|██████▌   | 26/40 [01:08<00:36,  2.60s/it] 68%|██████▊   | 27/40 [01:11<00:33,  2.60s/it] 70%|███████   | 28/40 [01:13<00:31,  2.60s/it] 72%|███████▎  | 29/40 [01:16<00:28,  2.60s/it] 75%|███████▌  | 30/40 [01:18<00:25,  2.60s/it] 78%|███████▊  | 31/40 [01:21<00:23,  2.60s/it] 80%|████████  | 32/40 [01:24<00:20,  2.60s/it] 82%|████████▎ | 33/40 [01:26<00:18,  2.60s/it] 85%|████████▌ | 34/40 [01:29<00:15,  2.60s/it] 88%|████████▊ | 35/40 [01:31<00:13,  2.60s/it] 90%|█████████ | 36/40 [01:34<00:10,  2.60s/it] 92%|█████████▎| 37/40 [01:37<00:07,  2.60s/it] 95%|█████████▌| 38/40 [01:39<00:05,  2.60s/it] 98%|█████████▊| 39/40 [01:42<00:02,  2.60s/it]W0322 17:26:17.493796 139978138052416 torch/distributed/elastic/agent/server/api.py:688] Received Signals.SIGINT death signal, shutting down workers
+W0322 17:26:17.494813 139978138052416 torch/distributed/elastic/multiprocessing/api.py:858] Sending process 1770261 closing signal SIGINT
+ 98%|█████████▊| 39/40 [01:44<00:02,  2.69s/it]
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 300, in <module>
+[rank0]:     run_linear_probe(args)
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 220, in run_linear_probe
+[rank0]:     data = run_extract_features(args, accelerator)
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 211, in run_extract_features
+[rank0]:     test_features, test_labels, test_img_paths, test_path_labels = extract_features(model, test_loader, accelerator, return_path=True)
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 74, in extract_features
+[rank0]:     features_list.append(all_preds.cpu())
+[rank0]: KeyboardInterrupt
+Traceback (most recent call last):
+  File "/users/arock3/.conda/envs/vpt_env/bin/accelerate", line 8, in <module>
+    sys.exit(main())
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/accelerate_cli.py", line 48, in main
+    args.func(args)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/launch.py", line 1159, in launch_command
+    multi_gpu_launcher(args)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/launch.py", line 793, in multi_gpu_launcher
+    distrib_run.run(args)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/run.py", line 892, in run
+    elastic_launch(
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 133, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 255, in launch_agent
+    result = agent.run()
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/elastic/metrics/api.py", line 124, in wrapper
+    result = f(*args, **kwargs)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py", line 680, in run
+    result = self._invoke_run(role)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py", line 835, in _invoke_run
+    time.sleep(monitor_interval)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/elastic/multiprocessing/api.py", line 79, in _terminate_process_handler
+    raise SignalException(f"Process {os.getpid()} got signal: {sigval}", sigval=sigval)
+torch.distributed.elastic.multiprocessing.api.SignalException: Process 1770066 got signal: 2
+==============================
+RUN #2 - DATE: Sun Mar 22 05:26:20 PM EDT 2026
+==============================

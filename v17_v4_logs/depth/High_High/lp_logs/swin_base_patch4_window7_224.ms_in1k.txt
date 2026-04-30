@@ -1,0 +1,60 @@
+==============================
+RUN #1 - DATE: Sun Mar 22 05:26:10 PM EDT 2026
+==============================
+swin_base_patch4_window7_224.ms_in1k
+  0%|          | 0/40 [00:00<?, ?it/s]W0322 17:26:35.500029 140000456714048 torch/distributed/elastic/agent/server/api.py:688] Received Signals.SIGINT death signal, shutting down workers
+W0322 17:26:35.501318 140000456714048 torch/distributed/elastic/multiprocessing/api.py:858] Sending process 1059166 closing signal SIGINT
+  0%|          | 0/40 [00:01<?, ?it/s]
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 300, in <module>
+[rank0]:     run_linear_probe(args)
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 220, in run_linear_probe
+[rank0]:     data = run_extract_features(args, accelerator)
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 210, in run_extract_features
+[rank0]:     train_features, train_labels = extract_features(model, train_loader, accelerator)
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 61, in extract_features
+[rank0]:     for batch in iterator:
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/tqdm/std.py", line 1178, in __iter__
+[rank0]:     for obj in iterable:
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/data_loader.py", line 550, in __iter__
+[rank0]:     current_batch = next(dataloader_iter)
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/utils/data/dataloader.py", line 630, in __next__
+[rank0]:     data = self._next_data()
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/utils/data/dataloader.py", line 1327, in _next_data
+[rank0]:     idx, data = self._get_data()
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/utils/data/dataloader.py", line 1283, in _get_data
+[rank0]:     success, data = self._try_get_data()
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/utils/data/dataloader.py", line 1131, in _try_get_data
+[rank0]:     data = self._data_queue.get(timeout=timeout)
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/queue.py", line 179, in get
+[rank0]:     self.not_empty.wait(remaining)
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/threading.py", line 306, in wait
+[rank0]:     gotit = waiter.acquire(True, timeout)
+[rank0]: KeyboardInterrupt
+Traceback (most recent call last):
+  File "/users/arock3/.conda/envs/vpt_env/bin/accelerate", line 8, in <module>
+    sys.exit(main())
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/accelerate_cli.py", line 48, in main
+    args.func(args)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/launch.py", line 1159, in launch_command
+    multi_gpu_launcher(args)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/launch.py", line 793, in multi_gpu_launcher
+    distrib_run.run(args)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/run.py", line 892, in run
+    elastic_launch(
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 133, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 255, in launch_agent
+    result = agent.run()
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/elastic/metrics/api.py", line 124, in wrapper
+    result = f(*args, **kwargs)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py", line 680, in run
+    result = self._invoke_run(role)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py", line 835, in _invoke_run
+    time.sleep(monitor_interval)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/elastic/multiprocessing/api.py", line 79, in _terminate_process_handler
+    raise SignalException(f"Process {os.getpid()} got signal: {sigval}", sigval=sigval)
+torch.distributed.elastic.multiprocessing.api.SignalException: Process 1059068 got signal: 2
+==============================
+RUN #2 - DATE: Sun Mar 22 05:26:37 PM EDT 2026
+==============================

@@ -1,0 +1,171 @@
+==============================
+RUN #1 - DATE: Sun Mar 22 04:54:59 PM EDT 2026
+==============================
+vit_large_patch16_224.dino
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 300, in <module>
+[rank0]:     run_linear_probe(args)
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 220, in run_linear_probe
+[rank0]:     data = run_extract_features(args, accelerator)
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 184, in run_extract_features
+[rank0]:     model = timm.create_model(args.model_name, pretrained=True, num_classes=0)
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_factory.py", line 138, in create_model
+[rank0]:     model = create_fn(
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/vision_transformer.py", line 3161, in vit_large_patch16_224
+[rank0]:     model = _create_vision_transformer('vit_large_patch16_224', pretrained=pretrained, **dict(model_args, **kwargs))
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/vision_transformer.py", line 3012, in _create_vision_transformer
+[rank0]:     return build_model_with_cfg(
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_builder.py", line 425, in build_model_with_cfg
+[rank0]:     pretrained_cfg = resolve_pretrained_cfg(
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_builder.py", line 368, in resolve_pretrained_cfg
+[rank0]:     pretrained_cfg = get_pretrained_cfg(model_with_tag)
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_registry.py", line 332, in get_pretrained_cfg
+[rank0]:     raise RuntimeError(f'Invalid pretrained tag ({tag}) for {arch_name}.')
+[rank0]: RuntimeError: Invalid pretrained tag (dino) for vit_large_patch16_224.
+[rank0]:[W322 16:55:11.875565497 ProcessGroupNCCL.cpp:1168] Warning: WARNING: process group has NOT been destroyed before we destruct ProcessGroupNCCL. On normal program exit, the application should call destroy_process_group to ensure that any pending NCCL operations have finished in this process. In rare cases this process can exit before this point and block the progress of another member of the process group. This constraint has always been present,  but this warning has only been added since PyTorch 2.4 (function operator())
+E0322 16:55:11.637376 139818309662528 torch/distributed/elastic/multiprocessing/api.py:833] failed (exitcode: 1) local_rank: 0 (pid: 764697) of binary: /users/arock3/.conda/envs/vpt_env/bin/python3.8
+Traceback (most recent call last):
+  File "/users/arock3/.conda/envs/vpt_env/bin/accelerate", line 8, in <module>
+    sys.exit(main())
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/accelerate_cli.py", line 48, in main
+    args.func(args)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/launch.py", line 1159, in launch_command
+    multi_gpu_launcher(args)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/launch.py", line 793, in multi_gpu_launcher
+    distrib_run.run(args)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/run.py", line 892, in run
+    elastic_launch(
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 133, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 264, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-03-22_16:55:11
+  host      : gpu2802.oscar.ccv.brown.edu
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 764697)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
+==============================
+RUN #2 - DATE: Sun Mar 22 04:55:12 PM EDT 2026
+==============================
+vit_large_patch16_224.dino
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 300, in <module>
+[rank0]:     run_linear_probe(args)
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 220, in run_linear_probe
+[rank0]:     data = run_extract_features(args, accelerator)
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 184, in run_extract_features
+[rank0]:     model = timm.create_model(args.model_name, pretrained=True, num_classes=0)
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_factory.py", line 138, in create_model
+[rank0]:     model = create_fn(
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/vision_transformer.py", line 3161, in vit_large_patch16_224
+[rank0]:     model = _create_vision_transformer('vit_large_patch16_224', pretrained=pretrained, **dict(model_args, **kwargs))
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/vision_transformer.py", line 3012, in _create_vision_transformer
+[rank0]:     return build_model_with_cfg(
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_builder.py", line 425, in build_model_with_cfg
+[rank0]:     pretrained_cfg = resolve_pretrained_cfg(
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_builder.py", line 368, in resolve_pretrained_cfg
+[rank0]:     pretrained_cfg = get_pretrained_cfg(model_with_tag)
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_registry.py", line 332, in get_pretrained_cfg
+[rank0]:     raise RuntimeError(f'Invalid pretrained tag ({tag}) for {arch_name}.')
+[rank0]: RuntimeError: Invalid pretrained tag (dino) for vit_large_patch16_224.
+[rank0]:[W322 16:55:24.903326224 ProcessGroupNCCL.cpp:1168] Warning: WARNING: process group has NOT been destroyed before we destruct ProcessGroupNCCL. On normal program exit, the application should call destroy_process_group to ensure that any pending NCCL operations have finished in this process. In rare cases this process can exit before this point and block the progress of another member of the process group. This constraint has always been present,  but this warning has only been added since PyTorch 2.4 (function operator())
+E0322 16:55:24.670644 139699028973376 torch/distributed/elastic/multiprocessing/api.py:833] failed (exitcode: 1) local_rank: 0 (pid: 769893) of binary: /users/arock3/.conda/envs/vpt_env/bin/python3.8
+Traceback (most recent call last):
+  File "/users/arock3/.conda/envs/vpt_env/bin/accelerate", line 8, in <module>
+    sys.exit(main())
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/accelerate_cli.py", line 48, in main
+    args.func(args)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/launch.py", line 1159, in launch_command
+    multi_gpu_launcher(args)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/launch.py", line 793, in multi_gpu_launcher
+    distrib_run.run(args)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/run.py", line 892, in run
+    elastic_launch(
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 133, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 264, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-03-22_16:55:24
+  host      : gpu2802.oscar.ccv.brown.edu
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 769893)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
+==============================
+RUN #3 - DATE: Sun Mar 22 04:55:25 PM EDT 2026
+==============================
+vit_large_patch16_224.dino
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 300, in <module>
+[rank0]:     run_linear_probe(args)
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 220, in run_linear_probe
+[rank0]:     data = run_extract_features(args, accelerator)
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 184, in run_extract_features
+[rank0]:     model = timm.create_model(args.model_name, pretrained=True, num_classes=0)
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_factory.py", line 138, in create_model
+[rank0]:     model = create_fn(
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/vision_transformer.py", line 3161, in vit_large_patch16_224
+[rank0]:     model = _create_vision_transformer('vit_large_patch16_224', pretrained=pretrained, **dict(model_args, **kwargs))
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/vision_transformer.py", line 3012, in _create_vision_transformer
+[rank0]:     return build_model_with_cfg(
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_builder.py", line 425, in build_model_with_cfg
+[rank0]:     pretrained_cfg = resolve_pretrained_cfg(
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_builder.py", line 368, in resolve_pretrained_cfg
+[rank0]:     pretrained_cfg = get_pretrained_cfg(model_with_tag)
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_registry.py", line 332, in get_pretrained_cfg
+[rank0]:     raise RuntimeError(f'Invalid pretrained tag ({tag}) for {arch_name}.')
+[rank0]: RuntimeError: Invalid pretrained tag (dino) for vit_large_patch16_224.
+[rank0]:[W322 16:55:38.098739057 ProcessGroupNCCL.cpp:1168] Warning: WARNING: process group has NOT been destroyed before we destruct ProcessGroupNCCL. On normal program exit, the application should call destroy_process_group to ensure that any pending NCCL operations have finished in this process. In rare cases this process can exit before this point and block the progress of another member of the process group. This constraint has always been present,  but this warning has only been added since PyTorch 2.4 (function operator())
+E0322 16:55:38.847852 139622745577280 torch/distributed/elastic/multiprocessing/api.py:833] failed (exitcode: 1) local_rank: 0 (pid: 771878) of binary: /users/arock3/.conda/envs/vpt_env/bin/python3.8
+Traceback (most recent call last):
+  File "/users/arock3/.conda/envs/vpt_env/bin/accelerate", line 8, in <module>
+    sys.exit(main())
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/accelerate_cli.py", line 48, in main
+    args.func(args)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/launch.py", line 1159, in launch_command
+    multi_gpu_launcher(args)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/launch.py", line 793, in multi_gpu_launcher
+    distrib_run.run(args)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/run.py", line 892, in run
+    elastic_launch(
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 133, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 264, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-03-22_16:55:38
+  host      : gpu2802.oscar.ccv.brown.edu
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 771878)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

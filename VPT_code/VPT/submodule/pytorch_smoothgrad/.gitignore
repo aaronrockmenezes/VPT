@@ -1,0 +1,7 @@
+*.pyc
+.DS_Store
+.vscode
+.python-version
+__pycache__
+images
+results_

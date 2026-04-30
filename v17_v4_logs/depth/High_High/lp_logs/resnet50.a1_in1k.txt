@@ -1,0 +1,145 @@
+==============================
+RUN #1 - DATE: Sun Mar 22 05:24:52 PM EDT 2026
+==============================
+resnet50.a1_in1k
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 300, in <module>
+[rank0]:     run_linear_probe(args)
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 220, in run_linear_probe
+[rank0]:     data = run_extract_features(args, accelerator)
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 184, in run_extract_features
+[rank0]:     model = timm.create_model(args.model_name, pretrained=True, num_classes=0)
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_factory.py", line 138, in create_model
+[rank0]:     model = create_fn(
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/resnet.py", line 1553, in resnet50
+[rank0]:     return _create_resnet('resnet50', pretrained, **dict(model_args, **kwargs))
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/resnet.py", line 792, in _create_resnet
+[rank0]:     return build_model_with_cfg(ResNet, variant, pretrained, **kwargs)
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_builder.py", line 457, in build_model_with_cfg
+[rank0]:     load_pretrained(
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_builder.py", line 226, in load_pretrained
+[rank0]:     state_dict = load_state_dict_from_hf(pretrained_loc, weights_only=True, cache_dir=cache_dir)
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_hub.py", line 226, in load_state_dict_from_hf
+[rank0]:     cached_safe_file = hf_hub_download(
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/huggingface_hub/utils/_validators.py", line 114, in _inner_fn
+[rank0]:     return fn(*args, **kwargs)
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/huggingface_hub/file_download.py", line 1014, in hf_hub_download
+[rank0]:     return _hf_hub_download_to_cache_dir(
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/huggingface_hub/file_download.py", line 1131, in _hf_hub_download_to_cache_dir
+[rank0]:     os.makedirs(os.path.dirname(blob_path), exist_ok=True)
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/os.py", line 213, in makedirs
+[rank0]:     makedirs(head, exist_ok=exist_ok)
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/os.py", line 223, in makedirs
+[rank0]:     mkdir(name, mode)
+[rank0]: OSError: [Errno 122] Disk quota exceeded: '/users/arock3/.cache/huggingface/hub/models--timm--resnet50.a1_in1k'
+[rank0]:[W322 17:25:05.859653344 ProcessGroupNCCL.cpp:1168] Warning: WARNING: process group has NOT been destroyed before we destruct ProcessGroupNCCL. On normal program exit, the application should call destroy_process_group to ensure that any pending NCCL operations have finished in this process. In rare cases this process can exit before this point and block the progress of another member of the process group. This constraint has always been present,  but this warning has only been added since PyTorch 2.4 (function operator())
+E0322 17:25:05.720909 140129158563648 torch/distributed/elastic/multiprocessing/api.py:833] failed (exitcode: 1) local_rank: 0 (pid: 1051362) of binary: /users/arock3/.conda/envs/vpt_env/bin/python3.8
+Traceback (most recent call last):
+  File "/users/arock3/.conda/envs/vpt_env/bin/accelerate", line 8, in <module>
+    sys.exit(main())
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/accelerate_cli.py", line 48, in main
+    args.func(args)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/launch.py", line 1159, in launch_command
+    multi_gpu_launcher(args)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/launch.py", line 793, in multi_gpu_launcher
+    distrib_run.run(args)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/run.py", line 892, in run
+    elastic_launch(
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 133, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 264, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-03-22_17:25:05
+  host      : gpu2802.oscar.ccv.brown.edu
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 1051362)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
+==============================
+RUN #2 - DATE: Sun Mar 22 05:25:06 PM EDT 2026
+==============================
+resnet50.a1_in1k
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 300, in <module>
+[rank0]:     run_linear_probe(args)
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 220, in run_linear_probe
+[rank0]:     data = run_extract_features(args, accelerator)
+[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 184, in run_extract_features
+[rank0]:     model = timm.create_model(args.model_name, pretrained=True, num_classes=0)
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_factory.py", line 138, in create_model
+[rank0]:     model = create_fn(
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/resnet.py", line 1553, in resnet50
+[rank0]:     return _create_resnet('resnet50', pretrained, **dict(model_args, **kwargs))
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/resnet.py", line 792, in _create_resnet
+[rank0]:     return build_model_with_cfg(ResNet, variant, pretrained, **kwargs)
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_builder.py", line 457, in build_model_with_cfg
+[rank0]:     load_pretrained(
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_builder.py", line 226, in load_pretrained
+[rank0]:     state_dict = load_state_dict_from_hf(pretrained_loc, weights_only=True, cache_dir=cache_dir)
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_hub.py", line 226, in load_state_dict_from_hf
+[rank0]:     cached_safe_file = hf_hub_download(
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/huggingface_hub/utils/_validators.py", line 114, in _inner_fn
+[rank0]:     return fn(*args, **kwargs)
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/huggingface_hub/file_download.py", line 1014, in hf_hub_download
+[rank0]:     return _hf_hub_download_to_cache_dir(
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/huggingface_hub/file_download.py", line 1131, in _hf_hub_download_to_cache_dir
+[rank0]:     os.makedirs(os.path.dirname(blob_path), exist_ok=True)
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/os.py", line 213, in makedirs
+[rank0]:     makedirs(head, exist_ok=exist_ok)
+[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/os.py", line 223, in makedirs
+[rank0]:     mkdir(name, mode)
+[rank0]: OSError: [Errno 122] Disk quota exceeded: '/users/arock3/.cache/huggingface/hub/models--timm--resnet50.a1_in1k'
+[rank0]:[W322 17:25:18.504304162 ProcessGroupNCCL.cpp:1168] Warning: WARNING: process group has NOT been destroyed before we destruct ProcessGroupNCCL. On normal program exit, the application should call destroy_process_group to ensure that any pending NCCL operations have finished in this process. In rare cases this process can exit before this point and block the progress of another member of the process group. This constraint has always been present,  but this warning has only been added since PyTorch 2.4 (function operator())
+E0322 17:25:19.260120 140335501588288 torch/distributed/elastic/multiprocessing/api.py:833] failed (exitcode: 1) local_rank: 0 (pid: 1053607) of binary: /users/arock3/.conda/envs/vpt_env/bin/python3.8
+Traceback (most recent call last):
+  File "/users/arock3/.conda/envs/vpt_env/bin/accelerate", line 8, in <module>
+    sys.exit(main())
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/accelerate_cli.py", line 48, in main
+    args.func(args)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/launch.py", line 1159, in launch_command
+    multi_gpu_launcher(args)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/launch.py", line 793, in multi_gpu_launcher
+    distrib_run.run(args)
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/run.py", line 892, in run
+    elastic_launch(
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 133, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 264, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-03-22_17:25:19
+  host      : gpu2802.oscar.ccv.brown.edu
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 1053607)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
+==============================
+RUN #3 - DATE: Sun Mar 22 05:25:19 PM EDT 2026
+==============================
+resnet50.a1_in1k
+  0%|          | 0/40 [00:00<?, ?it/s]  2%|▎         | 1/40 [00:01<00:56,  1.45s/it] 10%|█         | 4/40 [00:01<00:14,  2.44it/s] 20%|██        | 8/40 [00:02<00:09,  3.36it/s] 30%|███       | 12/40 [00:03<00:07,  3.81it/s] 40%|████      | 16/40 [00:04<00:05,  4.01it/s] 50%|█████     | 20/40 [00:05<00:04,  4.17it/s] 60%|██████    | 24/40 [00:06<00:03,  4.26it/s] 70%|███████   | 28/40 [00:07<00:02,  4.32it/s] 80%|████████  | 32/40 [00:08<00:01,  4.38it/s] 90%|█████████ | 36/40 [00:09<00:00,  4.38it/s]100%|██████████| 40/40 [00:09<00:00,  6.01it/s]100%|██████████| 40/40 [00:09<00:00,  4.32it/s]
+  0%|          | 0/40 [00:00<?, ?it/s]  2%|▎         | 1/40 [00:01<00:43,  1.11s/it] 10%|█         | 4/40 [00:01<00:16,  2.24it/s] 20%|██        | 8/40 [00:02<00:09,  3.24it/s] 30%|███       | 12/40 [00:03<00:07,  3.74it/s] 40%|████      | 16/40 [00:04<00:06,  3.97it/s] 50%|█████     | 20/40 [00:05<00:04,  4.14it/s] 60%|██████    | 24/40 [00:06<00:03,  4.23it/s] 70%|███████   | 28/40 [00:07<00:02,  4.29it/s] 80%|████████  | 32/40 [00:08<00:01,  4.35it/s] 90%|█████████ | 36/40 [00:09<00:00,  4.37it/s]100%|██████████| 40/40 [00:09<00:00,  4.32it/s]
+  0%|          | 0/30 [00:00<?, ?it/s]  3%|▎         | 1/30 [00:00<00:19,  1.49it/s]  7%|▋         | 2/30 [00:01<00:15,  1.78it/s] 10%|█         | 3/30 [00:01<00:14,  1.91it/s] 13%|█▎        | 4/30 [00:02<00:12,  2.02it/s] 17%|█▋        | 5/30 [00:02<00:12,  2.01it/s] 20%|██        | 6/30 [00:03<00:11,  2.07it/s] 23%|██▎       | 7/30 [00:03<00:10,  2.12it/s] 27%|██▋       | 8/30 [00:03<00:10,  2.15it/s] 30%|███       | 9/30 [00:04<00:09,  2.17it/s] 33%|███▎      | 10/30 [00:04<00:09,  2.20it/s] 37%|███▋      | 11/30 [00:05<00:08,  2.22it/s] 40%|████      | 12/30 [00:05<00:07,  2.27it/s] 43%|████▎     | 13/30 [00:06<00:07,  2.28it/s] 47%|████▋     | 14/30 [00:06<00:07,  2.27it/s] 50%|█████     | 15/30 [00:07<00:06,  2.22it/s] 53%|█████▎    | 16/30 [00:07<00:06,  2.17it/s] 57%|█████▋    | 17/30 [00:07<00:05,  2.21it/s] 60%|██████    | 18/30 [00:08<00:05,  2.26it/s] 63%|██████▎   | 19/30 [00:08<00:05,  2.18it/s] 67%|██████▋   | 20/30 [00:09<00:04,  2.24it/s] 70%|███████   | 21/30 [00:09<00:03,  2.28it/s] 73%|███████▎  | 22/30 [00:10<00:03,  2.27it/s] 77%|███████▋  | 23/30 [00:10<00:03,  2.30it/s] 80%|████████  | 24/30 [00:10<00:02,  2.34it/s] 83%|████████▎ | 25/30 [00:11<00:02,  2.35it/s] 87%|████████▋ | 26/30 [00:11<00:01,  2.37it/s] 90%|█████████ | 27/30 [00:12<00:01,  2.35it/s] 93%|█████████▎| 28/30 [00:12<00:00,  2.38it/s] 97%|█████████▋| 29/30 [00:13<00:00,  2.42it/s]100%|██████████| 30/30 [00:13<00:00,  2.43it/s]100%|██████████| 30/30 [00:13<00:00,  2.23it/s]
+Best acc validation 82.8125
+Best acc test 82.8125
+Best acc train 86.40625
+Best acc human 82.8125

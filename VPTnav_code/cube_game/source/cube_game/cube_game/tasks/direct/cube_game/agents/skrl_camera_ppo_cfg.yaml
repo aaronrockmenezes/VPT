@@ -1,0 +1,82 @@
+# Copyright (c) 2022-2025, The Isaac Lab Project Developers
+# All rights reserved.
+# SPDX-License-Identifier: BSD-3-Clause
+
+seed: 42
+
+# Models are instantiated using skrl's model instantiator utility
+# https://skrl.readthedocs.io/en/latest/api/utils/model_instantiators.html
+models:
+  separate: False
+  policy:  
+    class: CategoricalMixin
+    unnormalized_probabilities: True # Tells skrl your network outputs raw logits
+    clip_actions: False
+    network:
+      - name: features_extractor
+        input: OBSERVATIONS  
+        layers:
+          - conv2d: {out_channels: 32, kernel_size: 8, stride: 4, padding: 0}
+          - conv2d: {out_channels: 64, kernel_size: 4, stride: 2, padding: 0}
+          - conv2d: {out_channels: 64, kernel_size: 3, stride: 2, padding: 0}
+          - conv2d: {out_channels: 64, kernel_size: 3, stride: 1, padding: 0}
+          - flatten
+        activations: relu
+      - name: net
+        input: features_extractor
+        layers: [512, 256] 
+        activations: elu
+    output: ACTIONS
+  value:  
+    class: DeterministicMixin
+    clip_actions: False
+    # Because separate: False is set above, skrl will actually ignore 
+    # this network block and use the policy network's base as a shared feature extractor.
+    # It just needs the class and output definition to attach the value head.
+    network: [] 
+    output: ONE
+
+# Rollout memory
+memory:
+  class: RandomMemory
+  memory_size: -1  
+
+# PPO agent configuration
+agent:
+  class: PPO
+  rollouts: 64  # Increased from 64. 64 is a bit short for CNN batches with 16 envs.
+  learning_epochs: 4
+  mini_batches: 16 # Decreased from 32 to keep batch sizes large enough for stable CNN gradients
+  discount_factor: 0.99
+  lambda: 0.95
+  learning_rate: 1.0e-04
+  learning_rate_scheduler: KLAdaptiveLR
+  learning_rate_scheduler_kwargs:
+    kl_threshold: 0.008
+  state_preprocessor: null
+  state_preprocessor_kwargs: null
+  value_preprocessor: RunningStandardScaler
+  value_preprocessor_kwargs: null
+  random_timesteps: 0
+  learning_starts: 0
+  grad_norm_clip: 1.0
+  ratio_clip: 0.2
+  value_clip: 0.2
+  clip_predicted_values: True
+  entropy_loss_scale: 0.005 # Added entropy. 0.0 will cause the agent to stop exploring too early.
+  value_loss_scale: 1.0
+  kl_threshold: 0.0
+  rewards_shaper_scale: 1.0
+  time_limit_bootstrap: False
+  # logging and checkpoint
+  experiment:
+    directory: "cube_game_skrl_ppo"
+    experiment_name: ""
+    write_interval: 128  # <-- Add this. It will write to TB every 128 steps.
+    checkpoint_interval: 1000
+
+# Sequential trainer
+trainer:
+  class: SequentialTrainer
+  timesteps: 1000000
+  environment_info: log
