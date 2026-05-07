@@ -166,14 +166,18 @@ cube_game/
 │   ├── test_models_accel_args.sh      # accelerate-based eval runner
 │   ├── test_multiple.sh               # multi-run test wrapper
 │   ├── compile_results.py
-│   ├── keyboard_agent.py / random_agent.py / zero_agent.py
-│   ├── vpt2_keyboard_agent.py
-│   ├── list_envs.py
+│ ├── keyboard_agent.py / random_agent.py / zero_agent.py
+│ ├── vpt2_keyboard_agent.py
+│ ├── A_star_agent.py # interactive A* debug agent
+│ ├── A_star_automatic_agent.py # batch A* navigation agent
+│ ├── astar_viz.py # offline A* plan visualizer
+│ ├── list_envs.py
 │   ├── sb3/                           # SB3 RL (untouched)
 │   └── skrl/                          # SKRL RL (untouched)
 └── source/cube_game/cube_game/tasks/direct/cube_game/
-    ├── vpt_env_v18.py                 # primary data collection env (current)
-    ├── vpt_env_v18_depth.py           # depth variant
+ ├── vpt_env_v18.py # primary data collection env (current)
+ ├── vpt_env_v18_A_star.py # A* navigation variant
+ ├── vpt_env_v18_depth.py # depth variant
     ├── vpt_env_v19.py                 # WIP next version
     ├── vpt_env_cfg_v15_rl.py          # RL config
     ├── vpt_env_cfg_v17.py             # current data collection config
@@ -189,6 +193,105 @@ cube_game/
     ├── spawn_boundary_old.py          # pending import verification
     └── __init__.py
 ```
+
+---
+
+## A* Navigation (vpt_env_v18_A_star.py)
+
+**Class:** `VPTEnvAStar(VPTEnv)` — extends data collection env with A* pathfinding.
+
+**Three-action space:** `0=forward`, `2=left turn`, `3=right turn`. No backward/stop.
+
+**Planning pipeline:**
+1. Build 2D occupancy grid from OBB footprints + inflation
+2. Run A* on grid (8-connected, heading-binned cost) from agent to camera object
+3. Convert grid path → action sequence (forward/turn)
+4. Execute actions; yaw alignment done at runtime (greedy left/right spamming, NOT in plan)
+
+**Navigation state machine (shared by both agent scripts):**
+- `NAVIGATING` → executing queued plan actions
+- `ALIGNING_YAW` → queue drained, position OK, greedy yaw correction
+- `DONE_STATE` → both position and yaw within tolerance
+
+**Greedy yaw alignment:**
+- After plan queue drains, check if position within `pos_tol_m`
+- If yes: spam turn commands toward target yaw
+- 3 consecutive yaw-error increases → give up (overshoot detection)
+- Yaw tolerance: 11.46 deg (matches heading bin resolution)
+
+**Collision-revert detection:**
+- Before each forward step, record agent XY position
+- After step, compute displacement
+- If displacement < 0.01m → agent hit wall/obstacle → clear queue, re-plan
+
+**Inflation fallback schedule (both agent scripts):**
+1. `None` (use env default `planner_inflation_m=0.12`)
+2. `0.06` (50% of default)
+3. `0.03` (25% of default)
+4. `0.0` (no inflation — last resort)
+
+**Key constants (synced across env + astar_viz.py):**
+| Constant | Value | Notes |
+|---|---|---|
+| `PLANNER_INFLATION_M` | 0.12 | 0.1m half-extent + 0.02m margin |
+| `HEADING_BIN_RAD` | π/24 (7.5°) | A* heading discretization |
+| `ASTAR_MAX_EXPANSIONS` | 250000 | Max nodes explored |
+| `FORWARD_STEP_M` | 0.15 | Grid resolution = forward step |
+| `POS_TOL_M` | 0.2 | Goal position tolerance |
+
+**OBB inflation method (edge-intersection, both files identical):**
+1. Compute each edge's outward normal (RIGHT perp `(ey,-ex)` for CCW polygon)
+2. Shift each edge outward by `normal * inflate`
+3. Intersect consecutive shifted edges → true Minkowski sum vertices
+4. Scanline rasterize inflated polygon → mark occupancy grid
+
+**Agent scripts:**
+| Script | Purpose |
+|---|---|
+| `A_star_agent.py` | Interactive debug: step-by-step plan/execute/align + frame capture |
+| `A_star_automatic_agent.py` | Batch: auto-navigate fixed set of envs, save all frames, JSON metrics |
+| `A_star_data_collector.py` | **Scalable data collection**: runs until `--target_successes` (default 10k). Saves only successful navigations. RL-resets failed/overflow envs. Enforces 50/25/25 split. |
+| `astar_viz.py` | Offline: visualize A* plans + inflation on static scenes |
+
+**A_star_data_collector.py key design:**
+- On success within quota → save frames + `actions.txt` + `meta.json`, RL-reset, continue
+- On failure or quota overflow → discard frames, RL-reset immediately
+- RL reset spawns agent in 10×10 square around camera with 4×4 deadzone (collision-checked, 200 attempts)
+- 50/25/25 enforced via per-category quotas; stops when all three are full
+- Frames staged in `_tmp_{i}_{ep_id}/` then atomically moved to `ep_{N:06d}_env_{i}/` on save
+
+**Output structure (mirrors data-collection pipeline + `rollout/` subfolder):**
+
+```
+{base_path}/
+├── RGB/{Yes|No}/rollout/env_{folder_idx}/
+│   ├── step_{N:05d}_{action}.png    # agent POV RGB per action
+│   └── final_pos_*.png              # agent POV at final pose
+├── Semantic/{Yes|No}/rollout/env_{folder_idx}/
+│   ├── step_{N:05d}_{action}.png    # agent POV semantic per action
+│   └── final_pos_*.png              # agent POV semantic at final pose
+├── cam/{Yes|No}/rollout/env_{folder_idx}/
+│   ├── final_cam_semantic.png       # camera-obj POV semantic (final)
+│   ├── actions.txt                  # space-separated action sequence
+│   └── meta.json                    # folder_idx, seed, reason, label, metrics
+└── successful_envs.json             # cumulative tracker, flushed per success
+```
+
+**Env API additions (`vpt_env_v18_A_star.py`):**
+- `save_rollout_step(env_slot, folder_idx, step_n, action_label)` — writes one RGB + semantic frame
+- `save_rollout_final(env_slot, folder_idx, pos_err, yaw_err)` — writes final agent RGB + semantic + camera-obj POV semantic
+- `_rollout_dirs(folder_idx)` — returns dict of label-aware dir paths
+- `_to_uint8_rgb(tensor)` — tensor→numpy conversion helper
+
+**Folder advancement on RL reset:** Collector calls `_advance_slot` which manually pops the next label from `visibility_label_pool` and advances `slot_folder_indices`. Pool is auto-refilled (50/25/25) when empty so 10k+ targets work despite default `total_envs_to_sim=2000`.
+
+**CLI args (data collector only):**
+| Arg | Default | Notes |
+|---|---|---|
+| `--target_successes` | 10000 | Stop after this many saves |
+| `--spawn_half_extent` | 5.0 | Half-side of spawn square (metres) |
+| `--spawn_deadzone` | 2.0 | Half-side of no-spawn zone at camera centre |
+| `--max_total_steps` | 150 | Per-env step budget |
 
 ---
 
