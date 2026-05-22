@@ -14,6 +14,8 @@ __pycache__/
 .vscode/
 .idea/
 .claude/
+.agents/
+.obsidian/
 
 # Test sandbox
 .test_sandbox/
@@ -30,14 +32,20 @@ __pycache__/
 
 # Training / experiment outputs
 logs/
+**/logs/
 output/
 output_*/
 outputs/
+**/outputs/
 wandb/
+**/wandb/
 runs/
 slurm_logs/
+**/slurm_logs/
 *.out
 *.err
+v17_v4_logs/
+v18_logs/
 
 # VPT_code specific big dirs
 VPT_code/VPT/logs/
@@ -45,6 +53,16 @@ VPT_code/VPT/output/
 VPT_code/VPT/output_OCC/
 VPT_code/VPT/honwrnbd/
 VPT_code/VPT/__pycache__/
+
+# Server dump / nested repo artifacts
+**/.git/
+VPTnav_code/cube_game copy/
+VPTnav_code/cube_game/.hermes/
+VPTnav_code/cube_game/astar_viz_output/
+VPTnav_code/cube_game/scripts/sb3/outputs/
+VPTnav_code/cube_game/scripts/skrl/outputs/
+VPTnav_code/cube_game/scripts/sb3/wandb/
+VPTnav_code/cube_game/scripts/skrl/logs/
 
 # Misc
 *.log
