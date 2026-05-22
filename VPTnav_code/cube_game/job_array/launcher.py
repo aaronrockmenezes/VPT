@@ -11,9 +11,10 @@ def main():
     parser.add_argument('--data_dir', type=str, required=True)
     parser.add_argument('--script_path', type=str, required=True)
     parser.add_argument('--task', type=str, required=True)
-    args = parser.parse_args()
+    args, extra_args = parser.parse_known_args()
 
-    node_id = os.getenv("SLURM_ARRAY_TASK_ID", "0")
+    # Prefer composite NODE_ID from worker ({job}_{task}); fall back to bare task id.
+    node_id = os.getenv("NODE_ID") or os.getenv("SLURM_ARRAY_TASK_ID", "0")
 
     procs = []
     files = []
@@ -45,7 +46,7 @@ def main():
         f = open(out_file, "w")
         files.append(f)
 
-        cmd = [sys.executable, "-u", args.script_path, "--task", args.task]
+        cmd = [sys.executable, "-u", args.script_path, "--task", args.task] + extra_args
         
         p = subprocess.Popen(cmd, env=env, stdout=f, stderr=subprocess.STDOUT)
         procs.append(p)

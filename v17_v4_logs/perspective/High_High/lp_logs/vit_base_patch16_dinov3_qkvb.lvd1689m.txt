@@ -1,44 +1,0 @@
-==============================
-RUN #1 - DATE: Sun Mar 22 05:26:01 PM EDT 2026
-==============================
-vit_base_patch16_dinov3_qkvb.lvd1689m
-  0%|          | 0/40 [00:00<?, ?it/s]  2%|▎         | 1/40 [00:01<00:40,  1.03s/it]  5%|▌         | 2/40 [00:01<00:19,  2.00it/s]  8%|▊         | 3/40 [00:01<00:12,  2.88it/s] 10%|█         | 4/40 [00:01<00:09,  3.82it/s] 12%|█▎        | 5/40 [00:01<00:07,  4.67it/s] 15%|█▌        | 6/40 [00:01<00:06,  5.04it/s] 18%|█▊        | 7/40 [00:01<00:05,  5.68it/s] 20%|██        | 8/40 [00:02<00:05,  6.18it/s] 22%|██▎       | 9/40 [00:02<00:04,  6.56it/s] 25%|██▌       | 10/40 [00:02<00:04,  6.84it/s] 28%|██▊       | 11/40 [00:02<00:04,  7.04it/s] 30%|███       | 12/40 [00:02<00:03,  7.19it/s] 32%|███▎      | 13/40 [00:02<00:03,  7.31it/s] 35%|███▌      | 14/40 [00:02<00:03,  7.40it/s] 38%|███▊      | 15/40 [00:02<00:03,  7.44it/s] 40%|████      | 16/40 [00:03<00:03,  7.46it/s] 42%|████▎     | 17/40 [00:03<00:03,  7.50it/s]W0322 17:26:17.493775 140361571161920 torch/distributed/elastic/agent/server/api.py:688] Received Signals.SIGINT death signal, shutting down workers
-W0322 17:26:17.494760 140361571161920 torch/distributed/elastic/multiprocessing/api.py:858] Sending process 1794801 closing signal SIGINT
- 42%|████▎     | 17/40 [00:03<00:04,  5.09it/s]
-[rank0]: Traceback (most recent call last):
-[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 300, in <module>
-[rank0]:     run_linear_probe(args)
-[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 220, in run_linear_probe
-[rank0]:     data = run_extract_features(args, accelerator)
-[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 210, in run_extract_features
-[rank0]:     train_features, train_labels = extract_features(model, train_loader, accelerator)
-[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 74, in extract_features
-[rank0]:     features_list.append(all_preds.cpu())
-[rank0]: KeyboardInterrupt
-Traceback (most recent call last):
-  File "/users/arock3/.conda/envs/vpt_env/bin/accelerate", line 8, in <module>
-    sys.exit(main())
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/accelerate_cli.py", line 48, in main
-    args.func(args)
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/launch.py", line 1159, in launch_command
-    multi_gpu_launcher(args)
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/launch.py", line 793, in multi_gpu_launcher
-    distrib_run.run(args)
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/run.py", line 892, in run
-    elastic_launch(
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 133, in __call__
-    return launch_agent(self._config, self._entrypoint, list(args))
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 255, in launch_agent
-    result = agent.run()
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/elastic/metrics/api.py", line 124, in wrapper
-    result = f(*args, **kwargs)
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py", line 680, in run
-    result = self._invoke_run(role)
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py", line 835, in _invoke_run
-    time.sleep(monitor_interval)
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/elastic/multiprocessing/api.py", line 79, in _terminate_process_handler
-    raise SignalException(f"Process {os.getpid()} got signal: {sigval}", sigval=sigval)
-torch.distributed.elastic.multiprocessing.api.SignalException: Process 1794364 got signal: 2
-==============================
-RUN #2 - DATE: Sun Mar 22 05:26:19 PM EDT 2026
-==============================

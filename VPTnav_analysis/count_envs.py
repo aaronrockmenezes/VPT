@@ -71,6 +71,6 @@ def count_left_right_envs(parent_dir: str, min_images: int):
     print("========================================")
 
 # Example usage:
-PARENT_DIRECTORY = "/users/arock3/scratch/VPT1_DATA/v18_rgb_cam/data"
+PARENT_DIRECTORY = "/users/arock3/scratch/VPT1_DATA/camera/v18_camera/data"
 EXPECTED_MIN_IMAGES = 10
 count_left_right_envs(PARENT_DIRECTORY, EXPECTED_MIN_IMAGES)

@@ -1,120 +1,0 @@
-==============================
-RUN #1 - DATE: Sun Mar 22 05:24:59 PM EDT 2026
-==============================
-efficientnet_b2.ra_in1k
-  0%|          | 0/40 [00:00<?, ?it/s]  2%|▎         | 1/40 [00:01<00:46,  1.18s/it] 10%|█         | 4/40 [00:01<00:09,  3.91it/s] 20%|██        | 8/40 [00:01<00:05,  6.21it/s] 28%|██▊       | 11/40 [00:01<00:03,  9.00it/s] 32%|███▎      | 13/40 [00:02<00:03,  7.07it/s] 40%|████      | 16/40 [00:02<00:03,  6.82it/s] 45%|████▌     | 18/40 [00:02<00:02,  7.88it/s] 50%|█████     | 20/40 [00:03<00:02,  7.09it/s] 55%|█████▌    | 22/40 [00:03<00:02,  8.41it/s] 60%|██████    | 24/40 [00:03<00:02,  7.07it/s] 65%|██████▌   | 26/40 [00:03<00:01,  8.64it/s] 70%|███████   | 28/40 [00:04<00:01,  7.24it/s] 75%|███████▌  | 30/40 [00:04<00:01,  8.63it/s] 80%|████████  | 32/40 [00:04<00:01,  7.28it/s] 85%|████████▌ | 34/40 [00:04<00:00,  8.54it/s] 90%|█████████ | 36/40 [00:05<00:00,  7.34it/s] 92%|█████████▎| 37/40 [00:05<00:00,  7.49it/s]100%|██████████| 40/40 [00:05<00:00, 10.34it/s]100%|██████████| 40/40 [00:05<00:00,  7.29it/s]
-  0%|          | 0/40 [00:00<?, ?it/s]  2%|▎         | 1/40 [00:00<00:26,  1.49it/s] 10%|█         | 4/40 [00:01<00:09,  3.91it/s] 20%|██        | 8/40 [00:01<00:05,  5.57it/s] 30%|███       | 12/40 [00:02<00:04,  6.45it/s] 40%|████      | 16/40 [00:02<00:03,  6.95it/s] 50%|█████     | 20/40 [00:03<00:02,  7.10it/s] 60%|██████    | 24/40 [00:03<00:02,  7.28it/s] 70%|███████   | 28/40 [00:04<00:01,  7.49it/s] 80%|████████  | 32/40 [00:04<00:01,  7.65it/s] 90%|█████████ | 36/40 [00:05<00:00,  7.73it/s]100%|██████████| 40/40 [00:05<00:00,  9.79it/s]100%|██████████| 40/40 [00:05<00:00,  7.38it/s]
-  0%|          | 0/30 [00:00<?, ?it/s]  3%|▎         | 1/30 [00:00<00:13,  2.19it/s]  7%|▋         | 2/30 [00:00<00:11,  2.54it/s] 10%|█         | 3/30 [00:01<00:09,  2.71it/s] 13%|█▎        | 4/30 [00:01<00:09,  2.87it/s] 17%|█▋        | 5/30 [00:01<00:08,  2.87it/s] 20%|██        | 6/30 [00:02<00:08,  2.84it/s] 23%|██▎       | 7/30 [00:02<00:08,  2.83it/s] 27%|██▋       | 8/30 [00:02<00:07,  2.95it/s] 30%|███       | 9/30 [00:03<00:06,  3.04it/s] 33%|███▎      | 10/30 [00:03<00:06,  2.94it/s] 37%|███▋      | 11/30 [00:03<00:06,  2.94it/s] 40%|████      | 12/30 [00:04<00:05,  3.00it/s] 43%|████▎     | 13/30 [00:04<00:05,  2.96it/s] 47%|████▋     | 14/30 [00:04<00:05,  3.01it/s] 50%|█████     | 15/30 [00:05<00:05,  2.96it/s] 53%|█████▎    | 16/30 [00:05<00:04,  3.01it/s] 57%|█████▋    | 17/30 [00:05<00:04,  2.94it/s] 60%|██████    | 18/30 [00:06<00:04,  2.91it/s] 63%|██████▎   | 19/30 [00:06<00:03,  2.94it/s] 67%|██████▋   | 20/30 [00:06<00:03,  2.93it/s] 70%|███████   | 21/30 [00:07<00:02,  3.02it/s] 73%|███████▎  | 22/30 [00:07<00:02,  3.02it/s] 77%|███████▋  | 23/30 [00:07<00:02,  3.04it/s] 80%|████████  | 24/30 [00:08<00:01,  3.03it/s] 83%|████████▎ | 25/30 [00:08<00:01,  2.99it/s] 87%|████████▋ | 26/30 [00:08<00:01,  3.02it/s] 90%|█████████ | 27/30 [00:09<00:00,  3.10it/s] 93%|█████████▎| 28/30 [00:09<00:00,  3.03it/s] 97%|█████████▋| 29/30 [00:09<00:00,  3.10it/s]100%|██████████| 30/30 [00:10<00:00,  3.08it/s]100%|██████████| 30/30 [00:10<00:00,  2.96it/s]
-Best acc validation 59.10156250000001
-Best acc test 59.10156250000001
-Best acc train 77.421875
-Best acc human 59.10156250000001
-==============================
-RUN #2 - DATE: Sun Mar 22 05:25:34 PM EDT 2026
-==============================
-efficientnet_b2.ra_in1k
-  0%|          | 0/40 [00:00<?, ?it/s]  2%|▎         | 1/40 [00:01<00:41,  1.06s/it] 10%|█         | 4/40 [00:01<00:08,  4.11it/s] 20%|██        | 8/40 [00:01<00:05,  5.76it/s] 30%|███       | 12/40 [00:02<00:04,  6.53it/s] 38%|███▊      | 15/40 [00:02<00:02,  8.65it/s] 42%|████▎     | 17/40 [00:02<00:03,  7.19it/s] 50%|█████     | 20/40 [00:03<00:02,  6.94it/s] 57%|█████▊    | 23/40 [00:03<00:01,  9.01it/s] 62%|██████▎   | 25/40 [00:03<00:01,  7.51it/s] 68%|██████▊   | 27/40 [00:03<00:01,  8.89it/s] 72%|███████▎  | 29/40 [00:04<00:01,  7.33it/s] 80%|████████  | 32/40 [00:04<00:01,  6.96it/s] 85%|████████▌ | 34/40 [00:04<00:00,  8.35it/s] 90%|█████████ | 36/40 [00:05<00:00,  6.99it/s] 95%|█████████▌| 38/40 [00:05<00:00,  8.43it/s]100%|██████████| 40/40 [00:05<00:00,  7.28it/s]
-  0%|          | 0/40 [00:00<?, ?it/s]  2%|▎         | 1/40 [00:00<00:25,  1.55it/s] 10%|█         | 4/40 [00:01<00:09,  3.89it/s] 20%|██        | 8/40 [00:01<00:05,  5.50it/s] 30%|███       | 12/40 [00:02<00:04,  6.39it/s] 40%|████      | 16/40 [00:02<00:03,  6.96it/s] 50%|█████     | 20/40 [00:03<00:02,  6.96it/s] 60%|██████    | 24/40 [00:03<00:02,  7.35it/s] 70%|███████   | 28/40 [00:04<00:01,  7.65it/s] 80%|████████  | 32/40 [00:04<00:01,  7.85it/s] 90%|█████████ | 36/40 [00:05<00:00,  7.90it/s]100%|██████████| 40/40 [00:05<00:00, 10.04it/s]100%|██████████| 40/40 [00:05<00:00,  7.46it/s]
-  0%|          | 0/30 [00:00<?, ?it/s]  3%|▎         | 1/30 [00:00<00:11,  2.50it/s]  7%|▋         | 2/30 [00:00<00:10,  2.74it/s] 10%|█         | 3/30 [00:01<00:09,  2.92it/s] 13%|█▎        | 4/30 [00:01<00:08,  3.03it/s] 17%|█▋        | 5/30 [00:01<00:07,  3.13it/s] 20%|██        | 6/30 [00:02<00:08,  2.98it/s] 23%|██▎       | 7/30 [00:02<00:07,  3.03it/s] 27%|██▋       | 8/30 [00:02<00:07,  2.99it/s] 30%|███       | 9/30 [00:03<00:06,  3.02it/s] 33%|███▎      | 10/30 [00:03<00:06,  3.07it/s] 37%|███▋      | 11/30 [00:03<00:06,  3.11it/s] 40%|████      | 12/30 [00:03<00:05,  3.12it/s] 43%|████▎     | 13/30 [00:04<00:05,  3.07it/s] 47%|████▋     | 14/30 [00:04<00:05,  3.08it/s] 50%|█████     | 15/30 [00:04<00:04,  3.03it/s] 53%|█████▎    | 16/30 [00:05<00:04,  3.07it/s] 57%|█████▋    | 17/30 [00:05<00:04,  3.10it/s] 60%|██████    | 18/30 [00:05<00:03,  3.22it/s] 63%|██████▎   | 19/30 [00:06<00:03,  3.10it/s] 67%|██████▋   | 20/30 [00:06<00:03,  3.05it/s] 70%|███████   | 21/30 [00:06<00:02,  3.10it/s] 73%|███████▎  | 22/30 [00:07<00:02,  3.16it/s] 77%|███████▋  | 23/30 [00:07<00:02,  3.23it/s] 80%|████████  | 24/30 [00:07<00:01,  3.19it/s] 83%|████████▎ | 25/30 [00:08<00:01,  3.25it/s] 87%|████████▋ | 26/30 [00:08<00:01,  3.25it/s] 90%|█████████ | 27/30 [00:08<00:00,  3.16it/s] 93%|█████████▎| 28/30 [00:09<00:00,  3.15it/s] 97%|█████████▋| 29/30 [00:09<00:00,  3.15it/s]100%|██████████| 30/30 [00:09<00:00,  3.13it/s]100%|██████████| 30/30 [00:09<00:00,  3.09it/s]
-Best acc validation 59.1796875
-Best acc test 59.1796875
-Best acc train 74.765625
-Best acc human 59.1796875
-==============================
-RUN #3 - DATE: Sun Mar 22 05:26:08 PM EDT 2026
-==============================
-efficientnet_b2.ra_in1k
-W0322 17:26:17.493792 139721574205248 torch/distributed/elastic/agent/server/api.py:688] Received Signals.SIGINT death signal, shutting down workers
-W0322 17:26:17.494805 139721574205248 torch/distributed/elastic/multiprocessing/api.py:858] Sending process 1795747 closing signal SIGINT
-[rank0]: Traceback (most recent call last):
-[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 300, in <module>
-[rank0]:     run_linear_probe(args)
-[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 220, in run_linear_probe
-[rank0]:     data = run_extract_features(args, accelerator)
-[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 184, in run_extract_features
-[rank0]:     model = timm.create_model(args.model_name, pretrained=True, num_classes=0)
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_factory.py", line 138, in create_model
-[rank0]:     model = create_fn(
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/efficientnet.py", line 2096, in efficientnet_b2
-[rank0]:     model = _gen_efficientnet(
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/efficientnet.py", line 764, in _gen_efficientnet
-[rank0]:     model = _create_effnet(variant, pretrained, **model_kwargs)
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/efficientnet.py", line 465, in _create_effnet
-[rank0]:     model = build_model_with_cfg(
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_builder.py", line 457, in build_model_with_cfg
-[rank0]:     load_pretrained(
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_builder.py", line 226, in load_pretrained
-[rank0]:     state_dict = load_state_dict_from_hf(pretrained_loc, weights_only=True, cache_dir=cache_dir)
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/timm/models/_hub.py", line 226, in load_state_dict_from_hf
-[rank0]:     cached_safe_file = hf_hub_download(
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/huggingface_hub/utils/_validators.py", line 114, in _inner_fn
-[rank0]:     return fn(*args, **kwargs)
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/huggingface_hub/file_download.py", line 1014, in hf_hub_download
-[rank0]:     return _hf_hub_download_to_cache_dir(
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/huggingface_hub/file_download.py", line 1077, in _hf_hub_download_to_cache_dir
-[rank0]:     (url_to_download, etag, commit_hash, expected_size, xet_file_data, head_call_error) = _get_metadata_or_catch_error(
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/huggingface_hub/file_download.py", line 1550, in _get_metadata_or_catch_error
-[rank0]:     metadata = get_hf_file_metadata(
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/huggingface_hub/utils/_validators.py", line 114, in _inner_fn
-[rank0]:     return fn(*args, **kwargs)
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/huggingface_hub/file_download.py", line 1467, in get_hf_file_metadata
-[rank0]:     r = _request_wrapper(
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/huggingface_hub/file_download.py", line 283, in _request_wrapper
-[rank0]:     response = _request_wrapper(
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/huggingface_hub/file_download.py", line 306, in _request_wrapper
-[rank0]:     response = http_backoff(method=method, url=url, **params)
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/huggingface_hub/utils/_http.py", line 307, in http_backoff
-[rank0]:     response = session.request(method=method, url=url, **kwargs)
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/requests/sessions.py", line 589, in request
-[rank0]:     resp = self.send(prep, **send_kwargs)
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/requests/sessions.py", line 703, in send
-[rank0]:     r = adapter.send(request, **kwargs)
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/huggingface_hub/utils/_http.py", line 96, in send
-[rank0]:     return super().send(request, *args, **kwargs)
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/requests/adapters.py", line 486, in send
-[rank0]:     resp = conn.urlopen(
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/urllib3/connectionpool.py", line 714, in urlopen
-[rank0]:     httplib_response = self._make_request(
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/urllib3/connectionpool.py", line 466, in _make_request
-[rank0]:     six.raise_from(e, None)
-[rank0]:   File "<string>", line 3, in raise_from
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/urllib3/connectionpool.py", line 461, in _make_request
-[rank0]:     httplib_response = conn.getresponse()
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/http/client.py", line 1348, in getresponse
-[rank0]:     response.begin()
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/http/client.py", line 316, in begin
-[rank0]:     version, status, reason = self._read_status()
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/http/client.py", line 277, in _read_status
-[rank0]:     line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/socket.py", line 669, in readinto
-[rank0]:     return self._sock.recv_into(b)
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/ssl.py", line 1241, in recv_into
-[rank0]:     return self.read(nbytes, buffer)
-[rank0]:   File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/ssl.py", line 1099, in read
-[rank0]:     return self._sslobj.read(len, buffer)
-[rank0]: KeyboardInterrupt
-[rank0]:[W322 17:26:19.029844195 ProcessGroupNCCL.cpp:1168] Warning: WARNING: process group has NOT been destroyed before we destruct ProcessGroupNCCL. On normal program exit, the application should call destroy_process_group to ensure that any pending NCCL operations have finished in this process. In rare cases this process can exit before this point and block the progress of another member of the process group. This constraint has always been present,  but this warning has only been added since PyTorch 2.4 (function operator())
-Traceback (most recent call last):
-  File "/users/arock3/.conda/envs/vpt_env/bin/accelerate", line 8, in <module>
-    sys.exit(main())
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/accelerate_cli.py", line 48, in main
-    args.func(args)
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/launch.py", line 1159, in launch_command
-    multi_gpu_launcher(args)
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/launch.py", line 793, in multi_gpu_launcher
-    distrib_run.run(args)
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/run.py", line 892, in run
-    elastic_launch(
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 133, in __call__
-    return launch_agent(self._config, self._entrypoint, list(args))
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 255, in launch_agent
-    result = agent.run()
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/elastic/metrics/api.py", line 124, in wrapper
-    result = f(*args, **kwargs)
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py", line 680, in run
-    result = self._invoke_run(role)
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py", line 835, in _invoke_run
-    time.sleep(monitor_interval)
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/elastic/multiprocessing/api.py", line 79, in _terminate_process_handler
-    raise SignalException(f"Process {os.getpid()} got signal: {sigval}", sigval=sigval)
-torch.distributed.elastic.multiprocessing.api.SignalException: Process 1794946 got signal: 2

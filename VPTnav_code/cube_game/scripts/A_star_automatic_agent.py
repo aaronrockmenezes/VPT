@@ -53,12 +53,12 @@ parser.add_argument("--seed", type=int, default=42)
 parser.add_argument(
     "--pos_tol",
     type=float,
-    default=0.2,
+    default=0.3,
     help="Distance tol in meters for success (matches env termination).")
 parser.add_argument(
     "--yaw_tol_deg",
     type=float,
-    default=11.46,
+    default=15,
     help="Yaw tol in degrees for success (= 0.2 rad, matches env termination)."
 )
 parser.add_argument("--max_plan_steps",

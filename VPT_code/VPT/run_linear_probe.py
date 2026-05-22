@@ -142,15 +142,8 @@ def evaluate_linear_probe(model, data_loader, criterion, device, return_record, 
         return epoch_acc, sum(epoch_loss)/float(len(epoch_loss)), records
     return epoch_acc, sum(epoch_loss)/float(len(epoch_loss))
 
-def _get_device(args):
-    if torch.cuda.is_available():
-        return torch.device(f'cuda:{args.gpu_id}')
-    if torch.backends.mps.is_available():
-        return torch.device('mps')
-    return torch.device('cpu')
-
 def run_extract_features(args):
-    device = _get_device(args)
+    device = torch.device(f'cuda:{args.gpu_id}')
     print(args.model_name)
     model = timm.create_model(args.model_name, pretrained=True, num_classes=0)
     
@@ -189,7 +182,7 @@ def run_linear_probe(args):
                                 "architecture": args.model_name,
                                 "epochs": args.epochs,
                                 } )
-    device = _get_device(args)
+    device = torch.device(f'cuda:{args.gpu_id}')
 
     train_features, train_labels, \
     test_features, test_labels, \

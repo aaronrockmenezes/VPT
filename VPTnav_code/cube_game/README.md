@@ -1,116 +1,135 @@
-# VPTnav — Visual Perspective Taking Data Collection
+# Template for Isaac Lab Projects
 
-Isaac Lab extension for generating Visual Perspective Taking (VPT) datasets in simulation. Spawns randomized 3D scenes with obstacles, samples viewpoints around a goal object, and saves RGB / depth / semantic images with visibility labels.
+## Overview
 
-This project is **data-collection only**. RL training code has been removed; the environment classes still inherit from `DirectRLEnv` for Isaac Lab compatibility, but no agent is trained here.
+This project/repository serves as a template for building projects or extensions based on Isaac Lab.
+It allows you to develop in an isolated environment, outside of the core Isaac Lab repository.
 
-## Requirements
+**Key Features:**
 
-- NVIDIA GPU (Isaac Sim / Isaac Lab requirement)
-- Isaac Lab installed (see [Isaac Lab install guide](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/index.html))
-- Singularity image `isaac-lab.simg` available on the HPC for containerized runs
+- `Isolation` Work outside the core Isaac Lab repository, ensuring that your development efforts remain self-contained.
+- `Flexibility` This template is set up to allow your code to be run as an extension in Omniverse.
 
-## Tasks
+**Keywords:** extension, template, isaaclab
 
-Two gym IDs are registered (see `source/cube_game/cube_game/tasks/direct/cube_game/__init__.py`):
+## Installation
 
-| Task ID         | Entry point        | Notes                                                                 |
-|-----------------|--------------------|-----------------------------------------------------------------------|
-| `VPT-v0`        | `vpt_env.py`       | Main env. RGB + semantic + depth, single viewpoint pool.              |
-| `VPT-Depth-v0`  | `vpt_env_depth.py` | Depth-aware variant. 50/50 camera-proximal vs goal-proximal viewpoints, depth label per image. |
+- Install Isaac Lab by following the [installation guide](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/index.html).
+  We recommend using the conda installation as it simplifies calling Python scripts from the terminal.
 
-Both share `vpt_env_cfg.py` for scene / camera / arena config.
+- Clone or copy this project/repository separately from the Isaac Lab installation (i.e. outside the `IsaacLab` directory):
 
-## Install
+- Using a python interpreter that has Isaac Lab installed, install the library in editable mode using:
 
-```bash
-# Use the isaaclab Python interpreter (not system python)
-python -m pip install -e source/cube_game
-```
+    ```bash
+    # use 'PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
+    python -m pip install -e source/cube_game
 
-Verify registration:
+- Verify that the extension is correctly installed by:
 
-```bash
-python scripts/list_envs.py
-```
+    - Listing the available tasks:
 
-## Run data collection
+        Note: It the task name changes, it may be necessary to update the search pattern `"Template-"`
+        (in the `scripts/list_envs.py` file) so that it can be listed.
 
-`scripts/keyboard_agent.py` runs an env with action `-1` (no-op) so the env's `_reset_idx` loop drives data collection. With keyboard control:
+        ```bash
+        # use 'FULL_PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
+        python scripts/list_envs.py
+        ```
 
-| Key       | Action |
-|-----------|--------|
-| `W` / `↑` | forward |
-| `S` / `↓` | backward |
-| `A` / `←` | turn left |
-| `D` / `→` | turn right |
-| no input  | soft reset (default; triggers data collection step) |
+    - Running a task:
 
-```bash
-python scripts/keyboard_agent.py --task=VPT-v0 --num_envs=30
-python scripts/keyboard_agent.py --task=VPT-Depth-v0 --num_envs=30
-```
+        ```bash
+        # use 'FULL_PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
+        python scripts/<RL_LIBRARY>/train.py --task=<TASK_NAME>
+        ```
 
-## Output structure
+    - Running a task with dummy agents:
 
-Each env writes to `{base_path}/{RGB|Depth|Semantic}/{Yes|No}/env_{idx}/` plus a JSON of visibility labels:
+        These include dummy agents that output zero or random agents. They are useful to ensure that the environments are configured correctly.
 
-```json
-{
-  "environments": {
-    "0": {"label": "Yes", "reason": "in_view"},
-    "1": {"label": "No",  "reason": "occluded"}
-  },
-  "statistics": {
-    "total_environments": N,
-    "yes_count": X,
-    "no_count": Y,
-    "by_reason": {"in_view": ..., "occluded": ..., "outside_fov": ...}
-  }
-}
-```
+        - Zero-action agent
 
-Labels are pre-allocated at the dataset level in a 50 / 25 / 25 ratio — `in_view` / `occluded` / `outside_fov`. Each env is assigned the next slot from the pool when reset.
+            ```bash
+            # use 'FULL_PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
+            python scripts/zero_agent.py --task=<TASK_NAME>
+            ```
+        - Random-action agent
 
-`VPT-Depth-v0` additionally writes a per-image depth label (`1` = agent closer to camera, `0` = closer to goal).
+            ```bash
+            # use 'FULL_PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
+            python scripts/random_agent.py --task=<TASK_NAME>
+            ```
 
-## Configuration
+### Set up IDE (Optional)
 
-Key knobs live in `vpt_env_cfg.py`:
+To setup the IDE, please follow these instructions:
 
-- `num_envs` — parallel envs (default 32)
-- Camera resolution: 512×512, RGB + semantic + depth
-- Arena: 20 × 20 m
-- Goal: 0.25 m red sphere
-- Object pool: 32 VPT objects, 16 active per env (cross, L, cuboid, cylinder, cone, table_A, table_B, A, H, I, Z, Bench)
-- Agent camera pitch: 15°
+- Run VSCode Tasks, by pressing `Ctrl+Shift+P`, selecting `Tasks: Run Task` and running the `setup_python_env` in the drop down menu.
+  When running this task, you will be prompted to add the absolute path to your Isaac Sim installation.
 
-Output paths are still hardcoded inside `vpt_env.py` / `vpt_env_depth.py` (search for `/home/` and `/mnt/`). Edit those before running.
+If everything executes correctly, it should create a file .python.env in the `.vscode` directory.
+The file contains the python paths to all the extensions provided by Isaac Sim and Omniverse.
+This helps in indexing all the python modules for intelligent suggestions while writing code.
 
-## Source layout
+### Setup as Omniverse Extension (Optional)
 
-```
-cube_game/
-├── source/cube_game/cube_game/tasks/direct/cube_game/
-│   ├── __init__.py            # gym.register entries
-│   ├── vpt_env.py             # VPT-v0
-│   ├── vpt_env_depth.py       # VPT-Depth-v0
-│   ├── vpt_env_cfg.py         # shared cfg (VPTEnvCfg)
-│   ├── spawn_boundary.py      # arena walls, materials, object configs
-│   └── env_timer.py           # per-env timing utility
-├── scripts/
-│   ├── keyboard_agent.py
-│   ├── list_envs.py
-│   ├── compile_results.py
-│   └── ...
-├── job_array/                 # SLURM job array submission
-├── assets/, mass_assets/      # USD assets
-└── isaac-lab.simg             # Singularity image (HPC)
-```
+We provide an example UI extension that will load upon enabling your extension defined in `source/cube_game/cube_game/ui_extension_example.py`.
+
+To enable your extension, follow these steps:
+
+1. **Add the search path of this project/repository** to the extension manager:
+    - Navigate to the extension manager using `Window` -> `Extensions`.
+    - Click on the **Hamburger Icon**, then go to `Settings`.
+    - In the `Extension Search Paths`, enter the absolute path to the `source` directory of this project/repository.
+    - If not already present, in the `Extension Search Paths`, enter the path that leads to Isaac Lab's extension directory directory (`IsaacLab/source`)
+    - Click on the **Hamburger Icon**, then click `Refresh`.
+
+2. **Search and enable your extension**:
+    - Find your extension under the `Third Party` category.
+    - Toggle it to enable your extension.
 
 ## Code formatting
 
+We have a pre-commit template to automatically format your code.
+To install pre-commit:
+
 ```bash
 pip install pre-commit
+```
+
+Then you can run pre-commit with:
+
+```bash
 pre-commit run --all-files
+```
+
+## Troubleshooting
+
+### Pylance Missing Indexing of Extensions
+
+In some VsCode versions, the indexing of part of the extensions is missing.
+In this case, add the path to your extension in `.vscode/settings.json` under the key `"python.analysis.extraPaths"`.
+
+```json
+{
+    "python.analysis.extraPaths": [
+        "<path-to-ext-repo>/source/cube_game"
+    ]
+}
+```
+
+### Pylance Crash
+
+If you encounter a crash in `pylance`, it is probable that too many files are indexed and you run out of memory.
+A possible solution is to exclude some of omniverse packages that are not used in your project.
+To do so, modify `.vscode/settings.json` and comment out packages under the key `"python.analysis.extraPaths"`
+Some examples of packages that can likely be excluded are:
+
+```json
+"<path-to-isaac-sim>/extscache/omni.anim.*"         // Animation packages
+"<path-to-isaac-sim>/extscache/omni.kit.*"          // Kit UI tools
+"<path-to-isaac-sim>/extscache/omni.graph.*"        // Graph UI tools
+"<path-to-isaac-sim>/extscache/omni.services.*"     // Services tools
+...
 ```

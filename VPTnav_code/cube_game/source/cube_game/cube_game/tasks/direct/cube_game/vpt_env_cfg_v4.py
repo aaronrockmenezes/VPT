@@ -1,0 +1,251 @@
+# Copyright (c) 2022-2025, The Isaac Lab Project Developers (https://github.com/isaac-sim/IsaacLab/blob/main/CONTRIBUTORS.md).
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+from __future__ import annotations
+
+import math
+import torch
+
+import isaaclab.sim as sim_utils
+from isaaclab.sim import SimulationCfg
+from isaaclab.scene import InteractiveScene, InteractiveSceneCfg
+from isaaclab.assets import RigidObjectCollectionCfg, RigidObjectCfg
+from isaaclab.sensors import TiledCamera, TiledCameraCfg, save_images_to_file, CameraCfg, Camera
+from isaaclab.sensors import RayCaster, RayCasterCfg, patterns
+from isaaclab.envs import DirectRLEnv, DirectRLEnvCfg, ViewerCfg
+from isaaclab.utils import configclass
+from isaaclab.utils.math import sample_uniform
+
+import isaacsim.core.utils.prims as prim_utils
+
+from .spawn_boundary import get_boundary_cfg, spawn_random_objects
+import gymnasium as gym
+from gymnasium.spaces import Discrete, Box
+
+# Materials
+red_material = sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 0.0, 0.0))
+blue_material = sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 0.0, 1.0))
+green_material = sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 0.0))
+yellow_material = sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 1.0, 0.0))
+pink_material = sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 0.0, 1.0))
+cyan_material = sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 1.0))
+boundary_material = sim_utils.PreviewSurfaceCfg(diffuse_color=(0.6, 0.2, 0.2))
+
+
+@configclass
+class VPTEnvCfg(DirectRLEnvCfg):
+    # env
+    decimation = 1
+    episode_length_s = 300.0
+    action_scale = 1.0  # [N]
+    num_envs = 16
+    dt = 0.1
+
+    # Simulation
+    sim: SimulationCfg = SimulationCfg(
+        dt=dt,
+        device="cuda",
+        physx=sim_utils.PhysxCfg(
+            enable_ccd=True,  # Enable CCD globally
+            enable_stabilization=True,  # Enable stabilization  
+            enable_enhanced_determinism=True  # Better determinism
+        ),
+        render=sim_utils.RenderCfg(
+        antialiasing_mode="DLAA",  # Set your desired mode here
+        rendering_mode="balanced"
+        ))
+
+    # new_camera_obj = RigidObjectCfg(
+    #     prim_path="/World/envs/env_.*/camera_obj",
+    #     spawn=sim_utils.ConeCfg(
+    #         radius=0.15,
+    #         height=0.3,
+    #         axis='X',
+    #         mass_props=sim_utils.MassPropertiesCfg(mass=0.0),
+    #         rigid_props=sim_utils.RigidBodyPropertiesCfg(disable_gravity=True),
+    #         collision_props=sim_utils.CollisionPropertiesCfg(),
+    #         visual_material=green_material),
+    #     init_state=RigidObjectCfg.InitialStateCfg(pos=(0.0, 0.0, 0.0)))
+
+    camera_obj = RigidObjectCfg(
+        prim_path="/World/envs/env_.*/camera_obj",
+        spawn=sim_utils.UsdFileCfg(
+            usd_path="/home/arock3/cube_game/source/cube_game/cube_game/tasks/direct/cube_game/new_cam_2.usd",
+            mass_props=sim_utils.MassPropertiesCfg(mass=0.0),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(disable_gravity=True),
+            collision_props=sim_utils.CollisionPropertiesCfg(collision_enabled=False),
+            visual_material=green_material,
+            semantic_tags=[("class", "camera_obj")]),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.0, 0.0, 1.0)))
+
+    # Goal ball (green sphere)
+    goal_ball = RigidObjectCfg(
+        prim_path="/World/envs/env_.*/goal_ball",
+        spawn=sim_utils.MeshSphereCfg(
+            radius=0.15,
+            mass_props=sim_utils.MassPropertiesCfg(mass=0.0),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(disable_gravity=True),
+            collision_props=sim_utils.CollisionPropertiesCfg(collision_enabled=False),
+            visual_material=red_material,
+            semantic_tags=[("class", "target")]),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.0, 0.0, 0.0)),)
+
+    agent_height = 1.0
+
+    agent = RigidObjectCfg(
+        prim_path="/World/envs/env_.*/agent",
+        spawn=sim_utils.CuboidCfg(
+            size=(0.2, 0.2, 0.2),
+            mass_props=sim_utils.MassPropertiesCfg(mass=1.0),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                solver_position_iteration_count=1,
+                solver_velocity_iteration_count=1,
+                max_linear_velocity=3.0,
+                max_angular_velocity=0.0,
+            ),
+            visual_material=blue_material,
+            collision_props=sim_utils.CollisionPropertiesCfg(
+                collision_enabled=True)),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.0, 0.0, 0.05)))
+
+    # extras
+    x_min, x_max = -7.0, 7.0
+    y_min, y_max = -7.0, 7.0
+
+    # [[x_min, y_min], [x_max, y_max]]
+    boundary_limits = [[x_min, y_min], [x_max, y_max]]
+    boundary_height = 5.0
+
+    bottom_wall, top_wall, left_wall, right_wall = get_boundary_cfg(
+        boundary_limits, boundary_height)
+
+    mat = RigidObjectCfg(
+        prim_path="/World/envs/env_.*/mat",
+        spawn=sim_utils.CuboidCfg(
+            size=(x_max - x_min, y_max - y_min, 0.001),
+            mass_props=sim_utils.MassPropertiesCfg(mass=0.0),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(disable_gravity=True),
+            visual_material=boundary_material),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.0, 0.0, 0.01)))
+    
+    # Agent camera tilt down
+    agent_camera_pitch = 15
+
+    # camera
+    tiled_camera: TiledCameraCfg = TiledCameraCfg(
+        prim_path="/World/envs/env_.*/agent/agent_camera_semantic",
+        offset=TiledCameraCfg.OffsetCfg(pos=(0.0, 0.0, 1.0),
+                                        rot=(math.cos(math.radians(agent_camera_pitch / 2)), 0.0, math.sin(math.radians(agent_camera_pitch / 2)), 0.0),
+                                        convention="world"),
+        data_types=["semantic_segmentation"],  # Add depth!
+        spawn=sim_utils.PinholeCameraCfg(focal_length=24.0,
+                                         focus_distance=40.0,
+                                         horizontal_aperture=34.0,
+                                         vertical_aperture=34.0,
+                                         clipping_range=(0.01, 20.0)),
+        width=512,
+        height=512,
+        debug_vis=True,
+        update_latest_camera_pose=True,
+        colorize_semantic_segmentation=True,
+        semantic_segmentation_mapping={
+            "class:obstacles": (255, 255, 0, 255),   #Yellow
+            "class:target": (255, 0, 0, 255),        #Red
+            "class:camera_obj": (0, 255, 0, 255),   #Green
+        }
+    )
+
+    rgb_tiled_camera: TiledCameraCfg = TiledCameraCfg(
+        prim_path="/World/envs/env_.*/agent/agent_camera_rgb",
+        offset=TiledCameraCfg.OffsetCfg(pos=(0.0, 0.0, 1.0),
+                                        rot=(math.cos(math.radians(agent_camera_pitch / 2)), 0.0, math.sin(math.radians(agent_camera_pitch / 2)), 0.0),
+                                        convention="world"),
+        data_types=["rgb"],  # Add depth!
+        spawn=sim_utils.PinholeCameraCfg(focal_length=24.0,
+                                         focus_distance=40.0,
+                                         horizontal_aperture=34.0,
+                                         vertical_aperture=34.0,
+                                         clipping_range=(0.01, 20.0)),
+        width=512,
+        height=512,
+        debug_vis=True,
+        update_latest_camera_pose=True,
+    )
+
+    distance_tiled_camera: TiledCameraCfg = TiledCameraCfg(
+        prim_path="/World/envs/env_.*/agent/agent_camera_distance",
+        offset=TiledCameraCfg.OffsetCfg(pos=(0.0, 0.0, 1.0),
+                                        rot=(math.cos(math.radians(agent_camera_pitch / 2)), 0.0, math.sin(math.radians(agent_camera_pitch / 2)), 0.0),
+                                        convention="world"),
+        data_types=["distance_to_camera"],  # Add depth!
+        spawn=sim_utils.PinholeCameraCfg(focal_length=24.0,
+                                         focus_distance=40.0,
+                                         horizontal_aperture=34.0,
+                                         vertical_aperture=34.0,
+                                         clipping_range=(0.01, 20.0)),
+        width=512,
+        height=512,
+        debug_vis=True,
+        update_latest_camera_pose=True
+    )
+    
+    # Add second camera on camera_obj for occlusion checking
+    occlusion_camera: TiledCameraCfg = TiledCameraCfg(
+        prim_path="/World/envs/env_.*/camera_obj/occlusion_camera",
+        offset=TiledCameraCfg.OffsetCfg(
+            pos=(0.0, 0.0, 0.0),
+            # rot=(math.cos(math.pi/4), 0.0, 0.0, math.sin(math.pi/4)),  # 90 degree rotation around Z-axis
+            rot=(1, 0, 0 ,0),  # 90 degree rotation around Z-axis
+            convention="world"),
+        data_types=["semantic_segmentation"],  # Only depth
+        # data_types=["distance_to_camera"],  # Only depth
+        spawn=sim_utils.PinholeCameraCfg(focal_length=24.0,
+                                         focus_distance=40.0,
+                                         horizontal_aperture=34.0,
+                                         vertical_aperture=34.0,
+                                         clipping_range=(0.1, 20.0)),
+        width=512,
+        height=512,
+        debug_vis=True,
+        update_latest_camera_pose=True,
+        # colorize_semantic_segmentation=True,
+        semantic_segmentation_mapping={
+            # "class:obstacles": (255, 255, 0, 255),   #Yellow
+            "class:target": (255, 0, 0, 255),        #Red
+            # "class:camera_obj": (0, 255, 0, 255),   #Green
+        }
+    )
+
+    write_image_to_file = False
+
+    num_vpt_objs = 12
+
+    objects, objects_metadata = spawn_random_objects(num_objects=num_vpt_objs,
+                                           boundary_corners=boundary_limits,
+                                           prim_prefix="/World/envs/env_.*")
+
+    vpt_objects = RigidObjectCollectionCfg(
+        rigid_objects=objects)
+
+    # spaces
+    # action_space = 4  # 0=forward, 1=backward, 2=turn_left, 3=turn_right
+    # state_space = 0
+    # observation_space = tiled_camera.height * tiled_camera.width * 3
+    action_space = Discrete(
+        n=4, start=0)  # 0=forward, 1=backward, 2=turn_left, 3=turn_right
+    state_space = 0
+    observation_space = Box(low=0,
+                            high=255,
+                            shape=(3, tiled_camera.height, tiled_camera.width))
+
+    # change viewer settings
+    viewer = ViewerCfg(eye=(10.0, 10.0, 30.0), lookat=(0.0, 0.0, 0.0))
+
+    # scene
+    scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=num_envs,
+                                                     env_spacing=20.0,
+                                                     replicate_physics=True)
+
+    config_file = None

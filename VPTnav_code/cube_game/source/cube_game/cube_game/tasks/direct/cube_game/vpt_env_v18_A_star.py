@@ -73,6 +73,7 @@ class VPTEnv(DirectRLEnv):
 
         # --- Collection Counters & State ---
         self.valid_viewpoint_poses = [None] * self.num_envs
+        self.astar_start_metadata = [None] * self.num_envs
         self.selected_viewpoints_for_collection = [None] * self.num_envs
         self.used_viewpoint_indices = [set() for _ in range(self.num_envs)]
 
@@ -104,7 +105,7 @@ class VPTEnv(DirectRLEnv):
         self.NODE_ID = os.getenv("NODE_ID",
                                  os.getenv("SLURM_ARRAY_TASK_ID", "0"))
         base = os.getenv("BASE_PATH",
-                         "/oscar/scratch/arock3/VPT_DATA_A_STAR/v18_A_star")
+                         "/oscar/scratch/arock3/VPT_DATA_A_STAR/v18_A_star_new_v1")
         self.base_path = f"{base}/data/data_node{self.NODE_ID}_gpu{self.GPU_ID}"
 
         print("*" * 50)
@@ -657,9 +658,8 @@ class VPTEnv(DirectRLEnv):
                         rhs_x = sp0_cur_x - sp0_prev_x
                         rhs_y = sp0_cur_y - sp0_prev_y
                         t = (rhs_x * d_cur_y - rhs_y * d_cur_x) / det
-                        inflated.append(
-                            (sp0_prev_x + t * d_prev_x,
-                             sp0_prev_y + t * d_prev_y))
+                        inflated.append((sp0_prev_x + t * d_prev_x,
+                                         sp0_prev_y + t * d_prev_y))
                 # Rasterize the inflated convex quad via scanline.
                 # Find bounding rows, then for each row find the x-range
                 # that falls inside the quad using edge interpolation.
@@ -745,6 +745,8 @@ class VPTEnv(DirectRLEnv):
         yaw_tol_deg: float = 10.0,
         max_steps: int = 512,
         inflation_radius: float | None = None,
+        start_xy: torch.Tensor | None = None,
+        start_yaw: float | None = None,
     ) -> dict:
         """Plan navigation actions to the camera object.
 
@@ -772,9 +774,15 @@ class VPTEnv(DirectRLEnv):
         min_x = float(min_xy[0].item())
         min_y = float(min_xy[1].item())
 
-        start_xy = self._agent.data.root_pos_w[env_id, :2]
+        if start_xy is None:
+            start_xy = self._agent.data.root_pos_w[env_id, :2]
+        else:
+            start_xy = start_xy.to(device=self.device, dtype=torch.float32)[:2]
         goal_xy = self._camera_obj.data.root_pos_w[env_id, :2]
-        start_yaw = self._get_agent_yaw(env_id)
+        if start_yaw is None:
+            start_yaw = self._get_agent_yaw(env_id)
+        else:
+            start_yaw = float(start_yaw)
         target_yaw = self._get_camera_corrected_yaw(env_id)
         pre_plan_dist_err = float(torch.norm(start_xy - goal_xy).item())
         pre_plan_quat_err = abs(
@@ -977,7 +985,8 @@ class VPTEnv(DirectRLEnv):
                     curr_yaw = self._normalize_angle(curr_yaw - n_turn *
                                                      self.heading_bin_rad)
 
-            # Forward steps to cover this segment.
+
+# Forward steps to cover the distance.
             n_fwd = max(1, int(round(dist / true_forward_step_m)))
             actions.extend([0] * n_fwd)
 
@@ -3806,15 +3815,19 @@ class VPTEnv(DirectRLEnv):
 
         # timer.print_summary(spawn_attempt)
 
-    def _is_point_valid_batch(self,
-                              points: torch.Tensor,
-                              env_ids: torch.Tensor,
-                              min_obstacle_distance: float = 0.3,
-                              min_camera_obstacle_distance: float = 0.4,
-                              min_camera_target_distance: float = 1.0,
-                              min_target_obstacle_distance: float = None,
-                              check_agent_fov: bool = False,
-                              min_required_points: int = None) -> torch.Tensor:
+    def _is_point_valid_batch(
+            self,
+            points: torch.Tensor,
+            env_ids: torch.Tensor,
+            min_obstacle_distance: float = 0.3,
+            min_camera_obstacle_distance: float = 0.4,
+            min_camera_target_distance: float = 1.0,
+            min_target_obstacle_distance: float = None,
+            check_agent_fov: bool = False,
+            min_required_points: int = None,
+            start_half_extent: float | None = None,
+            start_deadzone: float | None = None,
+            early_stop_on_min_required: bool = True) -> torch.Tensor:
         """Pipeline: Geometric Checks (Fast) -> FOV Checks (Slow/Simulated)."""
         if min_required_points is None:
             min_required_points = self.images_per_env
@@ -3826,20 +3839,27 @@ class VPTEnv(DirectRLEnv):
         valid_mask = self._check_geometric_validity(
             points, env_ids, min_obstacle_distance,
             min_camera_obstacle_distance, min_camera_target_distance,
-            min_target_obstacle_distance)
+            min_target_obstacle_distance, start_half_extent, start_deadzone)
 
         if not check_agent_fov or not valid_mask.any():
             return valid_mask
 
         # 2. Slow FOV Checks (Physics Simulation)
         valid_mask = self._check_fov_validity(points, env_ids, valid_mask,
-                                              min_required_points)
+                                              min_required_points,
+                                              early_stop_on_min_required)
 
         return valid_mask
 
-    def _check_geometric_validity(self, points, env_ids, min_obs_dist,
-                                  min_cam_obs_dist, min_cam_target_dist,
-                                  min_target_obs_dist):
+    def _check_geometric_validity(self,
+                                  points,
+                                  env_ids,
+                                  min_obs_dist,
+                                  min_cam_obs_dist,
+                                  min_cam_target_dist,
+                                  min_target_obs_dist,
+                                  start_half_extent: float | None = None,
+                                  start_deadzone: float | None = None):
         """Validates boundaries, obstacle proximity, and camera clearance."""
         device = points.device
         valid_mask = torch.ones(points.shape[0],
@@ -3868,6 +3888,14 @@ class VPTEnv(DirectRLEnv):
 
         # Camera Checks
         cam_pos = self._camera_obj.data.root_pos_w[env_ids, :2]
+        camera_delta = points - cam_pos
+        if start_half_extent is not None:
+            valid_mask &= torch.all(
+                torch.abs(camera_delta) <= float(start_half_extent), dim=1)
+        if start_deadzone is not None:
+            inside_deadzone = torch.all(
+                torch.abs(camera_delta) < float(start_deadzone), dim=1)
+            valid_mask &= ~inside_deadzone
         valid_mask &= (torch.norm(points - cam_pos, dim=1) >=
                        min_cam_target_dist)
 
@@ -3897,7 +3925,12 @@ class VPTEnv(DirectRLEnv):
         batch_idx = idx[env_ids].unsqueeze(-1).expand(-1, -1, 2)
         return torch.gather(all_pos, 1, batch_idx)
 
-    def _check_fov_validity(self, points, env_ids, valid_mask, min_req_points):
+    def _check_fov_validity(self,
+                            points,
+                            env_ids,
+                            valid_mask,
+                            min_req_points,
+                            early_stop_on_min_required: bool = True):
         """Simulates view to check visibility. Handles sampling and logging."""
         device = points.device
         points_to_check = torch.where(valid_mask)[0]
@@ -3927,7 +3960,9 @@ class VPTEnv(DirectRLEnv):
 
             for eid, data in env_queues.items():
                 # Skip satisfied envs
-                if env_status[eid]['count'] >= min_req_points: continue
+                if (early_stop_on_min_required
+                        and env_status[eid]['count'] >= min_req_points):
+                    continue
 
                 if step < len(data['points']):
                     step_ids.append(torch.tensor(eid, device=device))
@@ -3935,8 +3970,9 @@ class VPTEnv(DirectRLEnv):
                     step_idxs.append(data['indices'][step])
 
             if not step_ids:
-                if self.verbose >= 1 and all(s['count'] >= min_req_points
-                                             for s in env_status.values()):
+                if (self.verbose >= 1 and early_stop_on_min_required
+                        and all(s['count'] >= min_req_points
+                                for s in env_status.values())):
                     print(
                         f"    ✅ All environments have {min_req_points}+ valid points. Early stop."
                     )
@@ -3959,8 +3995,8 @@ class VPTEnv(DirectRLEnv):
             for i, eid in enumerate(b_envs.tolist()):
                 if is_vis[i]:
                     env_status[eid]['count'] += 1
-                    if env_status[eid][
-                            'count'] == min_req_points:  # Just hit threshold
+                    if (early_stop_on_min_required and env_status[eid]['count']
+                            == min_req_points):  # Just hit threshold
                         if self.verbose >= 1:
                             print(
                                 f"    🎯 Env {eid}: Reached {min_req_points} valid points."
@@ -3969,6 +4005,8 @@ class VPTEnv(DirectRLEnv):
         # Restore State
         restore = torch.cat([saved_pos, saved_quat], dim=1)
         self._agent.write_root_com_pose_to_sim(restore, env_ids)
+        self._agent.write_root_com_velocity_to_sim(
+            torch.zeros(len(env_ids), 6, device=self.device), env_ids)
 
         return valid_mask & fov_valid_global
 
@@ -4001,8 +4039,89 @@ class VPTEnv(DirectRLEnv):
 
         return queues, status
 
+    def _viewpoint_yaw_to_keep_camera_visible(self, env_id: int,
+                                              target_pos_2d: torch.Tensor):
+        """Return v18/VPTnav capture yaw for a candidate viewpoint.
+
+        The agent generally faces the midpoint between camera and goal, but
+        jitter is clipped so the camera object remains inside the agent FOV.
+        This mirrors the current non-RL image collection logic in vpt_env.py.
+        """
+        cam_pos_2d = self._camera_obj.data.root_pos_w[env_id, :2]
+        goal_pos_2d = self._goal.data.root_pos_w[env_id, :2]
+        midpoint = (cam_pos_2d + goal_pos_2d) / 2.0
+
+        direction = midpoint - target_pos_2d
+        base_yaw = torch.atan2(direction[1], direction[0])
+
+        cam_dir = cam_pos_2d - target_pos_2d
+        angle_to_cam = torch.atan2(cam_dir[1], cam_dir[0])
+        delta_to_cam = angle_to_cam - base_yaw
+        delta_to_cam = (delta_to_cam + math.pi) % (2 * math.pi) - math.pi
+
+        half_fov = math.radians(15.0)
+        safety_margin = math.radians(5.0)
+        desired_max = math.radians(20.0)
+
+        delta_val = float(delta_to_cam.item())
+        jitter_lo = max(delta_val - half_fov + safety_margin, -desired_max)
+        jitter_hi = min(delta_val + half_fov - safety_margin, desired_max)
+
+        if jitter_lo < jitter_hi:
+            jitter_val = random.uniform(jitter_lo, jitter_hi)
+        else:
+            jitter_val = delta_val
+
+        return base_yaw + jitter_val
+
+    def _teleport_agent_to_viewpoint(self, env_ids, points, yaws=None):
+        """Teleport agents to VPTnav-style viewpoints and zero velocity."""
+        if not torch.is_tensor(env_ids):
+            env_ids = torch.tensor(env_ids,
+                                   dtype=torch.long,
+                                   device=self.device)
+        if points.ndim == 1:
+            points = points.unsqueeze(0)
+        if yaws is not None and not torch.is_tensor(yaws):
+            yaws = torch.tensor(yaws, dtype=torch.float32, device=self.device)
+
+        pos = torch.zeros((len(env_ids), 3), device=points.device)
+        pos[:, :2] = points[:, :2]
+        pos[:, 2] = self._agent.data.default_root_state[env_ids, 2]
+
+        quat = torch.zeros((len(env_ids), 4), device=points.device)
+        for row, env_id in enumerate(env_ids.tolist()):
+            if yaws is None:
+                yaw = self._viewpoint_yaw_to_keep_camera_visible(
+                    env_id, points[row, :2])
+            else:
+                yaw = yaws[row]
+            quat[row, 0] = torch.cos(yaw / 2)
+            quat[row, 3] = torch.sin(yaw / 2)
+
+        self._agent.write_root_com_pose_to_sim(torch.cat([pos, quat], dim=1),
+                                               env_ids)
+        self._agent.write_root_com_velocity_to_sim(
+            torch.zeros(len(env_ids), 6, device=self.device), env_ids)
+
     def _teleport_and_step(self, env_ids, points):
-        """Teleports agents, orients to midpoints, and steps physics."""
+        """Teleports agents to candidate viewpoints and steps physics."""
+        self._teleport_agent_to_viewpoint(env_ids, points)
+        if not torch.is_tensor(env_ids):
+            env_ids = torch.tensor(env_ids,
+                                   dtype=torch.long,
+                                   device=self.device)
+
+        # Step Physics
+        self.sim.step()
+        self._rgb_tiled_camera.update(self.sim.cfg.dt)
+        self._agent.update(self.sim.cfg.dt)
+        self._camera_obj.update(self.sim.cfg.dt)
+        self._goal.update(self.sim.cfg.dt)
+        self._vpt_objects.update(self.sim.cfg.dt)
+
+    def _teleport_and_step_old(self, env_ids, points):
+        """Deprecated midpoint+jitter helper kept for debugging reference."""
         cam_pos = self._camera_obj.data.root_pos_w[env_ids, :2]
         goal_pos = self._goal.data.root_pos_w[env_ids, :2]
 
@@ -4024,6 +4143,8 @@ class VPTEnv(DirectRLEnv):
 
         self._agent.write_root_com_pose_to_sim(torch.cat([pos, quat], dim=1),
                                                env_ids)
+        self._agent.write_root_com_velocity_to_sim(
+            torch.zeros(len(env_ids), 6, device=self.device), env_ids)
 
         # Step Physics
         self.sim.step()
@@ -4037,12 +4158,19 @@ class VPTEnv(DirectRLEnv):
             self,
             env_ids: torch.Tensor,
             angle_step: float = 2.0,
-            max_attempts: int = 300) -> List[torch.Tensor]:
+            max_attempts: int = 300,
+            min_required_points: int | None = None,
+            min_candidates_for_fov: int | None = None,
+            start_half_extent: float | None = None,
+            start_deadzone: float | None = None,
+            early_stop_on_min_required: bool = True) -> List[torch.Tensor]:
         """Generate valid viewpoint positions in parallel for all environments."""
         device = self.device
         num_envs = len(env_ids)
 
-        MIN_REQUIRED_POINTS = self.images_per_env
+        MIN_REQUIRED_POINTS = (self.images_per_env
+                               if min_required_points is None else
+                               int(min_required_points))
 
         # Generate all candidate angles
         num_angles = int(360.0 / angle_step)
@@ -4086,9 +4214,12 @@ class VPTEnv(DirectRLEnv):
             -1, num_angles).reshape(total_points)
 
         # Step 1: Geometric validation
-        geometric_valid = self._is_point_valid_batch(points=all_points_batch,
-                                                     env_ids=env_ids_batch,
-                                                     check_agent_fov=False)
+        geometric_valid = self._is_point_valid_batch(
+            points=all_points_batch,
+            env_ids=env_ids_batch,
+            check_agent_fov=False,
+            start_half_extent=start_half_extent,
+            start_deadzone=start_deadzone)
 
         geometric_valid_per_env = geometric_valid.reshape(num_envs, num_angles)
 
@@ -4104,7 +4235,8 @@ class VPTEnv(DirectRLEnv):
         displacement_filtered_env_ids = []
         displacement_filtered_indices = []
 
-        MIN_CANDIDATES_FOR_FOV = 40  # Require at least this many candidates before FOV check
+        MIN_CANDIDATES_FOR_FOV = (40 if min_candidates_for_fov is None else
+                                  int(min_candidates_for_fov))
 
         for i, env_id in enumerate(env_ids):
             env_id_item = env_id.item()
@@ -4225,8 +4357,10 @@ class VPTEnv(DirectRLEnv):
             env_ids=all_candidates_env_ids,
             check_agent_fov=True,
             min_required_points=
-            MIN_REQUIRED_POINTS  # Pass min required to enable early stopping
-        )
+            MIN_REQUIRED_POINTS,  # Pass min required to enable early stopping
+            start_half_extent=start_half_extent,
+            start_deadzone=start_deadzone,
+            early_stop_on_min_required=early_stop_on_min_required)
 
         # Restore original agent positions
         self._agent.write_root_pose_to_sim(torch.cat(
@@ -4417,6 +4551,338 @@ class VPTEnv(DirectRLEnv):
         if self.verbose >= 1:
             print(f"    ✅ Saved Folder {folder_idx}")
 
+    def _semantic_pixel_counts(self, sem_img: torch.Tensor) -> tuple[int, int]:
+        """Return exact red-target and green-camera pixel counts."""
+        if sem_img.dtype != torch.uint8 and sem_img.max() <= 1.0:
+            sem_img = (sem_img * 255.0).to(torch.uint8)
+        r = sem_img[..., 0]
+        g = sem_img[..., 1]
+        b = sem_img[..., 2]
+        if sem_img.shape[-1] > 3:
+            a = sem_img[..., 3]
+            red = (r == 255) & (g == 0) & (b == 0) & (a == 255)
+            green = (r == 0) & (g == 255) & (b == 0) & (a == 255)
+        else:
+            red = (r == 255) & (g == 0) & (b == 0)
+            green = (r == 0) & (g == 255) & (b == 0)
+        return int(red.sum().item()), int(green.sum().item())
+
+    def _camera_pov_red_count(self, env_slot: int) -> int:
+        """Return red target pixels from camera-object semantic POV."""
+        self._occlusion_camera.update(self.sim.cfg.dt)
+        sem_cam = self._occlusion_camera.data.output["semantic_segmentation"][
+            env_slot]
+        red_count, _ = self._semantic_pixel_counts(sem_cam)
+        return red_count
+
+    def _category_matches_camera_pov(self,
+                                     env_slot: int,
+                                     folder_idx: int,
+                                     red_count: int,
+                                     no_red_max: int = 0) -> tuple[bool, str]:
+        """Validate camera POV target visibility against env category."""
+        reason = self.env_visibility_reasons.get(folder_idx, "unknown")
+        target_visible = red_count >= self.goal_pixel_threshold_occlusion
+        if reason == "in_view":
+            return target_visible, "in_view target not visible in camera POV"
+        if reason in ("occluded", "outside_fov"):
+            if red_count > int(no_red_max):
+                return False, f"{reason} camera POV red pixels {red_count} > {no_red_max}"
+            return True, ""
+        return False, f"unknown visibility reason: {reason}"
+
+    def _pick_first_astar_viable_viewpoint(
+        self,
+        env_slot: int,
+        points: torch.Tensor,
+        pos_tol_m: float = 0.2,
+        yaw_tol_deg: float = 10.0,
+        max_plan_steps: int = 512
+    ) -> tuple[int | None, torch.Tensor | None, float | None, dict | None]:
+        """Return first visually-valid viewpoint with a valid A* path."""
+        default_infl = float(getattr(self, "planner_inflation_m", 0.12))
+        schedule = [None, default_infl * 0.5, default_infl * 0.25, 0.0]
+
+        for point_idx, point_xy in enumerate(points):
+            yaw = self._viewpoint_yaw_to_keep_camera_visible(
+                env_slot, point_xy)
+            yaw_val = float(yaw.item() if torch.is_tensor(yaw) else yaw)
+            for infl in schedule:
+                plan = self.plan_to_camera_actions_3act(
+                    env_id=env_slot,
+                    pos_tol_m=pos_tol_m,
+                    yaw_tol_deg=yaw_tol_deg,
+                    max_steps=max_plan_steps,
+                    inflation_radius=infl,
+                    start_xy=point_xy,
+                    start_yaw=yaw_val)
+                if plan.get("success", False):
+                    plan["chosen_candidate_idx"] = int(point_idx)
+                    plan["chosen_inflation_radius"] = (
+                        default_infl if infl is None else float(infl))
+                    plan["chosen_start_yaw"] = yaw_val
+                    return point_idx, point_xy, yaw_val, plan
+
+        return None, None, None, None
+
+    def prepare_astar_valid_starts(
+            self,
+            env_slots: list[int] | torch.Tensor,
+            folder_indices: list[int],
+            start_half_extent: float = 6.0,
+            start_deadzone: float = 3.0,
+            cam_no_red_max: int = 0,
+            settle_steps: int = 30,
+            pos_tol_m: float = 0.2,
+            yaw_tol_deg: float = 10.0,
+            max_plan_steps: int = 512) -> dict[int, tuple[bool, dict]]:
+        """Place multiple env slots at verified VPTnav-style A* starts.
+
+        This is the batched A* bridge path: v18/vpt_env.py supplies visual
+        semantics, while v17_rl_data contributes the "one valid viewpoint"
+        RL-start constraint. The reset pose is intentionally ignored.
+        """
+        if torch.is_tensor(env_slots):
+            slot_list = [int(x) for x in env_slots.detach().cpu().tolist()]
+        else:
+            slot_list = [int(x) for x in env_slots]
+
+        if len(slot_list) != len(folder_indices):
+            raise ValueError("env_slots and folder_indices must match length")
+        if not slot_list:
+            return {}
+
+        env_ids = torch.tensor(slot_list, device=self.device, dtype=torch.long)
+        viewpoints = self.generate_valid_circle_points(
+            env_ids=env_ids,
+            angle_step=2.0,
+            max_attempts=100,
+            min_required_points=1,
+            min_candidates_for_fov=5,
+            start_half_extent=start_half_extent,
+            start_deadzone=start_deadzone,
+            early_stop_on_min_required=False)
+
+        results: dict[int, tuple[bool, dict]] = {}
+        ready_slots = []
+        ready_folder_indices = []
+        ready_starts = []
+        ready_yaws = []
+        ready_candidate_indices = []
+        ready_candidate_counts = []
+        ready_plans = []
+
+        for list_idx, env_slot in enumerate(slot_list):
+            if not viewpoints or viewpoints[list_idx].shape[0] < 1:
+                meta = {
+                    "start_source": "valid_viewpoint_0",
+                    "valid_viewpoints_required": 1,
+                    "start_half_extent": float(start_half_extent),
+                    "start_deadzone": float(start_deadzone),
+                    "start_deadzone_metric": "square",
+                    "camera_pov_no_red_max": int(cam_no_red_max),
+                    "start_valid": False,
+                    "start_fail_reason": "no_valid_viewpoint",
+                    "settle_steps_before_first_frame": int(settle_steps),
+                }
+                self.astar_start_metadata[env_slot] = meta
+                results[env_slot] = (False, meta)
+                continue
+
+            candidate_count = int(viewpoints[list_idx].shape[0])
+            chosen_idx, start_xy, start_yaw, plan = (
+                self._pick_first_astar_viable_viewpoint(
+                    env_slot,
+                    viewpoints[list_idx],
+                    pos_tol_m=pos_tol_m,
+                    yaw_tol_deg=yaw_tol_deg,
+                    max_plan_steps=max_plan_steps))
+            if start_xy is None:
+                meta = {
+                    "start_source": "valid_viewpoint_0",
+                    "valid_viewpoints_required": 1,
+                    "start_half_extent": float(start_half_extent),
+                    "start_deadzone": float(start_deadzone),
+                    "start_deadzone_metric": "square",
+                    "camera_pov_no_red_max": int(cam_no_red_max),
+                    "start_valid": False,
+                    "start_fail_reason": "no_astar_viable_viewpoint",
+                    "visual_candidate_count": candidate_count,
+                    "settle_steps_before_first_frame": int(settle_steps),
+                }
+                self.astar_start_metadata[env_slot] = meta
+                results[env_slot] = (False, meta)
+                continue
+
+            self.valid_viewpoint_poses[env_slot] = torch.zeros(
+                (1, 3), device=self.device)
+            self.valid_viewpoint_poses[env_slot][0, :2] = start_xy
+            self.valid_viewpoint_poses[env_slot][
+                0, 2] = self._agent.data.default_root_state[env_slot, 2]
+
+            ready_slots.append(env_slot)
+            ready_folder_indices.append(int(folder_indices[list_idx]))
+            ready_starts.append(start_xy)
+            ready_yaws.append(float(start_yaw))
+            ready_candidate_indices.append(int(chosen_idx))
+            ready_candidate_counts.append(candidate_count)
+            ready_plans.append(plan)
+
+        if ready_slots:
+            ready_env_ids = torch.tensor(ready_slots,
+                                         device=self.device,
+                                         dtype=torch.long)
+            starts_tensor = torch.stack(ready_starts, dim=0)
+            yaws_tensor = torch.tensor(ready_yaws,
+                                       device=self.device,
+                                       dtype=torch.float32)
+            self._teleport_agent_to_viewpoint(ready_env_ids, starts_tensor,
+                                              yaws_tensor)
+            for _ in range(max(0, int(settle_steps))):
+                self.sim.step()
+                self._rgb_tiled_camera.update(self.sim.cfg.dt)
+                self._occlusion_camera.update(self.sim.cfg.dt)
+                self._agent.update(self.sim.cfg.dt)
+                self._camera_obj.update(self.sim.cfg.dt)
+                self._goal.update(self.sim.cfg.dt)
+                self._vpt_objects.update(self.sim.cfg.dt)
+
+            sem_agents = self._rgb_tiled_camera.data.output[
+                "semantic_segmentation"]
+            sem_cams = self._occlusion_camera.data.output[
+                "semantic_segmentation"]
+
+            for env_slot, folder_idx, start_xy, start_yaw, candidate_idx, candidate_count, plan in zip(
+                    ready_slots, ready_folder_indices, ready_starts,
+                    ready_yaws, ready_candidate_indices,
+                    ready_candidate_counts, ready_plans):
+                agent_goal_px, agent_camera_px = self._semantic_pixel_counts(
+                    sem_agents[env_slot])
+                cam_red_px, _ = self._semantic_pixel_counts(sem_cams[env_slot])
+                category_ok, category_fail = self._category_matches_camera_pov(
+                    env_slot,
+                    folder_idx,
+                    cam_red_px,
+                    no_red_max=cam_no_red_max)
+
+                cam_xy = self._camera_obj.data.root_pos_w[env_slot, :2]
+                delta = start_xy - cam_xy
+                in_square = bool(
+                    torch.all(torch.abs(delta) <= start_half_extent).item())
+                outside_deadzone = not bool(
+                    torch.all(torch.abs(delta) < start_deadzone).item())
+                start_to_camera_dist = float(torch.norm(delta).item())
+
+                first_view_ok = (
+                    agent_goal_px >= self.goal_pixel_threshold
+                    and agent_camera_px >= self.camera_pixel_threshold)
+                start_valid = bool(first_view_ok and category_ok and in_square
+                                   and outside_deadzone)
+
+                fail_reasons = []
+                if agent_goal_px < self.goal_pixel_threshold:
+                    fail_reasons.append("first_frame_goal_not_visible")
+                if agent_camera_px < self.camera_pixel_threshold:
+                    fail_reasons.append("first_frame_camera_not_visible")
+                if not category_ok:
+                    fail_reasons.append(category_fail)
+                if not in_square:
+                    fail_reasons.append("start_outside_camera_square")
+                if not outside_deadzone:
+                    fail_reasons.append("start_inside_square_deadzone")
+
+                meta = {
+                    "start_source":
+                    "valid_viewpoint_0",
+                    "valid_viewpoints_required":
+                    1,
+                    "start_half_extent":
+                    float(start_half_extent),
+                    "start_deadzone":
+                    float(start_deadzone),
+                    "start_deadzone_metric":
+                    "square",
+                    "start_valid":
+                    start_valid,
+                    "start_fail_reason":
+                    ";".join(fail_reasons),
+                    "start_position_xy":
+                    [float(start_xy[0].item()),
+                     float(start_xy[1].item())],
+                    "camera_position_xy":
+                    [float(cam_xy[0].item()),
+                     float(cam_xy[1].item())],
+                    "start_delta_xy_from_camera":
+                    [float(delta[0].item()),
+                     float(delta[1].item())],
+                    "start_to_camera_dist":
+                    start_to_camera_dist,
+                    "agent_first_view_goal_px":
+                    agent_goal_px,
+                    "agent_first_view_camera_px":
+                    agent_camera_px,
+                    "camera_pov_goal_px":
+                    cam_red_px,
+                    "camera_pov_no_red_max":
+                    int(cam_no_red_max),
+                    "visual_candidate_count":
+                    int(candidate_count),
+                    "astar_candidate_idx":
+                    int(candidate_idx),
+                    "astar_preplanned_path_len":
+                    int(len(plan.get("actions", []))) if plan else 0,
+                    "astar_preplanned_expanded_nodes":
+                    int((plan.get("metrics", {}) or {}).get(
+                        "expanded_nodes", 0)) if plan else 0,
+                    "astar_preplanned_inflation_radius":
+                    float(plan.get("chosen_inflation_radius", 0.0))
+                    if plan else 0.0,
+                    "start_yaw":
+                    float(start_yaw),
+                    "preplanned_actions":
+                    [int(a) for a in plan.get("actions", [])] if plan else [],
+                    "goal_pixel_threshold":
+                    int(self.goal_pixel_threshold),
+                    "camera_pixel_threshold":
+                    int(self.camera_pixel_threshold),
+                    "camera_pov_goal_threshold":
+                    int(self.goal_pixel_threshold_occlusion),
+                    "camera_object_quat_raw": [
+                        float(x) for x in self._camera_obj.data.
+                        root_quat_w[env_slot].detach().cpu().tolist()
+                    ],
+                    "camera_corrected_yaw":
+                    float(self._get_camera_corrected_yaw(env_slot)),
+                    "settle_steps_before_first_frame":
+                    int(settle_steps),
+                }
+                self.astar_start_metadata[env_slot] = meta
+                results[env_slot] = (start_valid, meta)
+
+        return results
+
+    def prepare_astar_valid_start(
+            self,
+            env_slot: int,
+            folder_idx: int,
+            start_half_extent: float = 6.0,
+            start_deadzone: float = 3.0,
+            cam_no_red_max: int = 0,
+            settle_steps: int = 30,
+            pos_tol_m: float = 0.2,
+            yaw_tol_deg: float = 10.0,
+            max_plan_steps: int = 512) -> tuple[bool, dict]:
+        """Place one env slot at a verified VPTnav-style A* start."""
+        return self.prepare_astar_valid_starts(
+            [env_slot], [folder_idx],
+            start_half_extent=start_half_extent,
+            start_deadzone=start_deadzone,
+            cam_no_red_max=cam_no_red_max,
+            settle_steps=settle_steps,
+            pos_tol_m=pos_tol_m,
+            yaw_tol_deg=yaw_tol_deg,
+            max_plan_steps=max_plan_steps)[env_slot]
+
     def _save_single_image(self,
                            env_slot: int,
                            folder_idx: int,
@@ -4547,13 +5013,17 @@ class VPTEnv(DirectRLEnv):
                         cv2.cvtColor(cam_pov_rgb_norm, cv2.COLOR_RGB2BGR))
 
     # ── A* rollout image saving ─────────────────────────────────────────
-    def _rollout_dirs(self, folder_idx: int) -> dict:
-        """Return rollout dir paths for env_{folder_idx}, label-aware."""
+    def _rollout_dirs(self, folder_idx: int, subdir: str = "rollout") -> dict:
+        """Return rollout dir paths for env_{folder_idx}, label-aware.
+
+        `subdir` controls the bucket: "rollout" for successes, "rollout_failed"
+        for failed/discarded episodes when --save all is used.
+        """
         label = self.env_visibility_labels.get(folder_idx)
         if label not in ("Yes", "No"):
             raise RuntimeError(
                 f"Invalid label '{label}' for folder {folder_idx}")
-        base = f"{self.base_path}/{{}}/{label}/rollout/env_{folder_idx}"
+        base = f"{self.base_path}/{{}}/{label}/{subdir}/env_{folder_idx}"
         return {
             "rgb": base.format("RGB"),
             "semantic": base.format("Semantic"),
@@ -4573,25 +5043,49 @@ class VPTEnv(DirectRLEnv):
             a = a[..., :3]
         return a
 
+    @staticmethod
+    def _resize_rgb(img: np.ndarray, size: int) -> np.ndarray:
+        """Downsample RGB image with INTER_AREA (best for downscale)."""
+        if size <= 0 or (img.shape[0] == size and img.shape[1] == size):
+            return img
+        return cv2.resize(img, (size, size), interpolation=cv2.INTER_AREA)
+
+    @staticmethod
+    def _resize_sem(img: np.ndarray, size: int) -> np.ndarray:
+        """Downsample semantic image with INTER_NEAREST (preserve labels)."""
+        if size <= 0 or (img.shape[0] == size and img.shape[1] == size):
+            return img
+        return cv2.resize(img, (size, size), interpolation=cv2.INTER_NEAREST)
+
     def save_rollout_step(self,
                           env_slot: int,
                           folder_idx: int,
                           step_n: int,
-                          action_label: str) -> None:
+                          action_label: str,
+                          subdir: str = "rollout",
+                          img_size: int = 0,
+                          settle_steps: int = 0) -> None:
         """Save one navigation step: agent RGB + agent semantic.
 
-        Path: {base}/RGB|Semantic/{Yes|No}/rollout/env_{folder_idx}/step_*.png
+        Path: {base}/RGB|Semantic/{Yes|No}/{subdir}/env_{folder_idx}/step_*.png
+        `img_size` > 0 downsamples to that side length before writing.
+        `settle_steps` advances/render-updates cameras before capture so
+        lighting/materials stabilize after the action step.
         """
-        dirs = self._rollout_dirs(folder_idx)
+        dirs = self._rollout_dirs(folder_idx, subdir)
         os.makedirs(dirs["rgb"], exist_ok=True)
         os.makedirs(dirs["semantic"], exist_ok=True)
 
-        rgb = self._rgb_tiled_camera.data.output["rgb"][env_slot]
-        sem = self._rgb_tiled_camera.data.output[
-            "semantic_segmentation"][env_slot]
+        for _ in range(max(0, int(settle_steps))):
+            self.sim.step()
+            self._rgb_tiled_camera.update(self.sim.cfg.dt)
 
-        rgb_np = self._to_uint8_rgb(rgb)
-        sem_np = self._to_uint8_rgb(sem)
+        rgb = self._rgb_tiled_camera.data.output["rgb"][env_slot]
+        sem = self._rgb_tiled_camera.data.output["semantic_segmentation"][
+            env_slot]
+
+        rgb_np = self._resize_rgb(self._to_uint8_rgb(rgb), img_size)
+        sem_np = self._resize_sem(self._to_uint8_rgb(sem), img_size)
 
         fname = f"step_{step_n:05d}_{action_label}.png"
         cv2.imwrite(f"{dirs['rgb']}/{fname}",
@@ -4603,29 +5097,38 @@ class VPTEnv(DirectRLEnv):
                            env_slot: int,
                            folder_idx: int,
                            pos_err: float,
-                           yaw_err: float) -> None:
+                           yaw_err: float,
+                           subdir: str = "rollout",
+                           img_size: int = 0,
+                           settle_steps: int = 0) -> None:
         """Save final agent RGB+semantic and final camera-obj semantic POV.
 
-        Tag carries pos_err / yaw_err. Cam POV file fixed name
-        `final_cam_semantic.png` (one per env).
+        `img_size` > 0 downsamples. Cam POV file is `final_cam_semantic.png`.
+        `settle_steps` advances/render-updates cameras before capture so
+        final RGB/semantic/cam-POV frames are not captured during transient
+        render settling.
         """
-        dirs = self._rollout_dirs(folder_idx)
+        dirs = self._rollout_dirs(folder_idx, subdir)
         os.makedirs(dirs["rgb"], exist_ok=True)
         os.makedirs(dirs["semantic"], exist_ok=True)
         os.makedirs(dirs["cam"], exist_ok=True)
 
-        # Refresh occlusion-camera output before reading.
+        for _ in range(max(0, int(settle_steps))):
+            self.sim.step()
+            self._rgb_tiled_camera.update(self.sim.cfg.dt)
+            self._occlusion_camera.update(self.sim.cfg.dt)
+
         self._occlusion_camera.update(self.sim.cfg.dt)
 
         rgb_agent = self._rgb_tiled_camera.data.output["rgb"][env_slot]
         sem_agent = self._rgb_tiled_camera.data.output[
             "semantic_segmentation"][env_slot]
-        sem_cam = self._occlusion_camera.data.output[
-            "semantic_segmentation"][env_slot]
+        sem_cam = self._occlusion_camera.data.output["semantic_segmentation"][
+            env_slot]
 
-        rgb_np = self._to_uint8_rgb(rgb_agent)
-        sem_np = self._to_uint8_rgb(sem_agent)
-        cam_np = self._to_uint8_rgb(sem_cam)
+        rgb_np = self._resize_rgb(self._to_uint8_rgb(rgb_agent), img_size)
+        sem_np = self._resize_sem(self._to_uint8_rgb(sem_agent), img_size)
+        cam_np = self._resize_sem(self._to_uint8_rgb(sem_cam), img_size)
 
         tag = f"final_pos_{pos_err:.3f}m_yaw_{yaw_err:.1f}d"
         cv2.imwrite(f"{dirs['rgb']}/{tag}.png",

@@ -1,44 +1,0 @@
-==============================
-RUN #1 - DATE: Sun Mar 22 05:25:56 PM EDT 2026
-==============================
-vit_base_patch16_siglip_512.v2_webli
-  0%|          | 0/40 [00:00<?, ?it/s]  2%|▎         | 1/40 [00:02<01:31,  2.35s/it]  5%|▌         | 2/40 [00:02<00:46,  1.22s/it]  8%|▊         | 3/40 [00:03<00:30,  1.23it/s] 10%|█         | 4/40 [00:03<00:23,  1.51it/s] 12%|█▎        | 5/40 [00:03<00:18,  1.85it/s] 15%|█▌        | 6/40 [00:04<00:17,  1.99it/s] 18%|█▊        | 7/40 [00:04<00:14,  2.24it/s] 20%|██        | 8/40 [00:04<00:13,  2.45it/s] 22%|██▎       | 9/40 [00:05<00:12,  2.56it/s] 25%|██▌       | 10/40 [00:05<00:11,  2.66it/s] 28%|██▊       | 11/40 [00:05<00:10,  2.77it/s] 30%|███       | 12/40 [00:06<00:09,  2.80it/s] 32%|███▎      | 13/40 [00:06<00:09,  2.84it/s] 35%|███▌      | 14/40 [00:06<00:08,  2.90it/s] 38%|███▊      | 15/40 [00:07<00:08,  2.90it/s] 40%|████      | 16/40 [00:07<00:08,  2.91it/s] 42%|████▎     | 17/40 [00:08<00:07,  2.94it/s] 45%|████▌     | 18/40 [00:08<00:07,  2.92it/s] 48%|████▊     | 19/40 [00:08<00:07,  2.93it/s] 50%|█████     | 20/40 [00:09<00:06,  2.95it/s] 52%|█████▎    | 21/40 [00:09<00:06,  2.93it/s] 55%|█████▌    | 22/40 [00:09<00:06,  2.94it/s] 57%|█████▊    | 23/40 [00:10<00:05,  2.96it/s] 60%|██████    | 24/40 [00:10<00:05,  2.94it/s] 62%|██████▎   | 25/40 [00:10<00:05,  2.95it/s] 65%|██████▌   | 26/40 [00:11<00:04,  2.95it/s] 68%|██████▊   | 27/40 [00:11<00:04,  2.94it/s] 70%|███████   | 28/40 [00:11<00:04,  2.95it/s] 72%|███████▎  | 29/40 [00:12<00:03,  2.95it/s] 75%|███████▌  | 30/40 [00:12<00:03,  2.94it/s] 78%|███████▊  | 31/40 [00:12<00:03,  2.95it/s] 80%|████████  | 32/40 [00:13<00:02,  2.95it/s] 82%|████████▎ | 33/40 [00:13<00:02,  2.95it/s] 85%|████████▌ | 34/40 [00:13<00:02,  2.95it/s] 88%|████████▊ | 35/40 [00:14<00:01,  2.95it/s] 90%|█████████ | 36/40 [00:14<00:01,  2.94it/s] 92%|█████████▎| 37/40 [00:14<00:01,  2.95it/s] 95%|█████████▌| 38/40 [00:15<00:00,  2.95it/s]W0322 17:26:35.499992 140377664796480 torch/distributed/elastic/agent/server/api.py:688] Received Signals.SIGINT death signal, shutting down workers
-W0322 17:26:35.501082 140377664796480 torch/distributed/elastic/multiprocessing/api.py:858] Sending process 1058799 closing signal SIGINT
- 95%|█████████▌| 38/40 [00:15<00:00,  2.45it/s]
-[rank0]: Traceback (most recent call last):
-[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 300, in <module>
-[rank0]:     run_linear_probe(args)
-[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 220, in run_linear_probe
-[rank0]:     data = run_extract_features(args, accelerator)
-[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 210, in run_extract_features
-[rank0]:     train_features, train_labels = extract_features(model, train_loader, accelerator)
-[rank0]:   File "/files22_lrsresearch/CLPS_Serre_Lab/projects/prj_robotics/VPT/run_accel_latest.py", line 74, in extract_features
-[rank0]:     features_list.append(all_preds.cpu())
-[rank0]: KeyboardInterrupt
-Traceback (most recent call last):
-  File "/users/arock3/.conda/envs/vpt_env/bin/accelerate", line 8, in <module>
-    sys.exit(main())
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/accelerate_cli.py", line 48, in main
-    args.func(args)
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/launch.py", line 1159, in launch_command
-    multi_gpu_launcher(args)
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/accelerate/commands/launch.py", line 793, in multi_gpu_launcher
-    distrib_run.run(args)
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/run.py", line 892, in run
-    elastic_launch(
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 133, in __call__
-    return launch_agent(self._config, self._entrypoint, list(args))
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 255, in launch_agent
-    result = agent.run()
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/elastic/metrics/api.py", line 124, in wrapper
-    result = f(*args, **kwargs)
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py", line 680, in run
-    result = self._invoke_run(role)
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/elastic/agent/server/api.py", line 835, in _invoke_run
-    time.sleep(monitor_interval)
-  File "/users/arock3/.conda/envs/vpt_env/lib/python3.8/site-packages/torch/distributed/elastic/multiprocessing/api.py", line 79, in _terminate_process_handler
-    raise SignalException(f"Process {os.getpid()} got signal: {sigval}", sigval=sigval)
-torch.distributed.elastic.multiprocessing.api.SignalException: Process 1057839 got signal: 2
-==============================
-RUN #2 - DATE: Sun Mar 22 05:26:37 PM EDT 2026
-==============================
