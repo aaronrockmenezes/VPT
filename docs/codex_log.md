@@ -423,3 +423,30 @@ copying environments into the final train/test dataset.
 
 - Run the builder on the current v18 pool and inspect accepted/rejected counts,
   especially `cam_red`, `cam_circle`, `sem_red`, and `sem_green`.
+
+## 2026-05-25 (4)
+
+**Task:** Add normal VPT-v18 camera deadzone for thesis dataset regeneration.
+
+**Files changed:**
+
+- `VPTnav_code/cube_game/source/cube_game/cube_game/tasks/direct/cube_game/vpt_env_v18.py`
+- `docs/codex_log.md`
+
+**Summary:**
+
+Added a normal VPT1/VPT-v18 agent-viewpoint deadzone matching the A* square
+deadzone behavior. Candidate collection viewpoints are rejected when they fall
+inside a camera-centered square with `abs(dx) < 3.0` and `abs(dy) < 3.0` by
+default. The threshold can be overridden with `VPT1_AGENT_CAMERA_DEADZONE`, and
+the value/metric are written into per-env config JSON.
+
+**Open questions:**
+
+- Whether thesis production should keep the default `3.0` square deadzone or
+  sweep a stricter value after visual QC.
+
+**Next actions:**
+
+- Regenerate normal VPT-v18 data for thesis and rebuild with
+  `scripts/utils/build_vpt1_dataset.py`.

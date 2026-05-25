@@ -58,6 +58,8 @@ class VPTEnv(DirectRLEnv):
         self.mode = "testing" if (self.config_file and os.path.exists(self.config_file)) else "data_collection"
         self.images_per_env = 10
         self.min_viewpoint_distance = 0.1
+        self.agent_camera_deadzone = float(
+            os.getenv("VPT1_AGENT_CAMERA_DEADZONE", "3.0"))
         self.save_camera_pov = True
         self.goal_pixel_threshold = 500
         self.goal_pixel_threshold_occlusion = 500
@@ -831,6 +833,8 @@ class VPTEnv(DirectRLEnv):
                 "boundary_limits": list(self.cfg.boundary_limits),
                 "agent_height": float(self.cfg.agent_height),
                 "agent_camera_pitch": float(self.cfg.agent_camera_pitch),
+                "agent_camera_deadzone": float(self.agent_camera_deadzone),
+                "agent_camera_deadzone_metric": "square_linf",
                 "action_scale": float(self.cfg.action_scale),
                 "num_vpt_objs": int(self.cfg.num_vpt_objs)
             },
@@ -2929,8 +2933,12 @@ class VPTEnv(DirectRLEnv):
 
         # Camera Checks
         cam_pos = self._camera_obj.data.root_pos_w[env_ids, :2]
-        valid_mask &= (torch.norm(points - cam_pos, dim=1)
-                       >= min_cam_target_dist)
+        camera_delta = points - cam_pos
+        if self.agent_camera_deadzone > 0:
+            inside_deadzone = torch.all(
+                torch.abs(camera_delta) < self.agent_camera_deadzone, dim=1)
+            valid_mask &= ~inside_deadzone
+        valid_mask &= (torch.norm(camera_delta, dim=1) >= min_cam_target_dist)
 
         dist_cam_obs = torch.norm(cam_pos.unsqueeze(1) - active_obs_pos, dim=2)
         valid_mask &= (dist_cam_obs.min(dim=1)[0] >= min_cam_obs_dist)
