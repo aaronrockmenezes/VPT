@@ -342,3 +342,29 @@ directory. Root repo is now the one true git-tracked source for the server snaps
 
 - Push the cleaned server-base history to `origin/main`.
 - Use this repo as the canonical source for future local/server sync.
+
+## 2026-05-25
+
+**Task:** Add deferred Oscar git migration TODO.
+
+**Files changed:**
+
+- `VPTnav_code/cube_game/docs/server_sync_todo.md`
+
+**Summary:**
+
+Recorded the next server-side step: migrate Oscar's active
+`/users/arock3/data/arock3/VPT` tree to the canonical GitHub-backed repo instead
+of continuing ad hoc rsync/tarball sync. The old camera-move checklist remains
+for context, but the canonical path is now clone/pull from `origin/main` and keep
+heavy runtime artifacts outside git.
+
+**Open questions:**
+
+- When to schedule the Oscar-side tree backup and cutover.
+
+**Next actions:**
+
+- Start current VPT1/VPT2 data/runs first.
+- Later, migrate Oscar to the canonical GitHub repo and update `MEMORY.md` after
+  verification.

@@ -1,10 +1,30 @@
-# Server ↔ Local Sync TODO
+# Server Sync TODO
 
-**Status: PENDING — do this before launching any camera-move job on Oscar.**
+**Status: PENDING — do later, before relying on server git state.**
 
-The camera-move pipeline was built locally. The Oscar server copy is behind. Aaron wants to
-pull the server copy down and treat **local as the source of truth** going forward. This
-file is the actionable checklist; `docs/camera_move_handoff.md` has the full context.
+As of 2026-05-22, local `main` and GitHub `origin/main` are the canonical VPT
+source. The old Oscar `/users/arock3/data/arock3/VPT` tree should be migrated
+to the GitHub repo instead of rsyncing ad hoc files.
+
+Server target root: `/users/arock3/data/arock3/VPT`
+
+## Canonical migration TODO
+
+1. On Oscar, back up the current server tree.
+2. Clone `https://github.com/aaronrockmenezes/VPT.git` beside it, e.g.
+   `/users/arock3/data/arock3/VPT_git`.
+3. Verify `git log --oneline -3`, `AGENTS.md`, and
+   `VPTnav_code/cube_game/job_array/submit_a_star_array.sh`.
+4. Keep heavy runtime artifacts outside git: `isaac-lab.simg`, logs,
+   checkpoints, W&B/Hydra outputs, and generated datasets.
+5. Once smoke tests pass, rename the old tree to a backup name and make the
+   cloned repo the active `/users/arock3/data/arock3/VPT`.
+6. After server migration is verified, update this file and `MEMORY.md`.
+
+## Legacy camera-move file checklist
+
+The section below is retained for context from the pre-git sync plan. Prefer
+the canonical GitHub migration above.
 
 Server repo root: `/users/arock3/data/arock3/VPT/VPTnav_code/cube_game`
 
