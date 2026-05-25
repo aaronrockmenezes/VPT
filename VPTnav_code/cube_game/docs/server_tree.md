@@ -32,27 +32,31 @@ The local repo now mirrors this shape at `/Users/aaronrockmenezes/Desktop/Serre 
 ```text
 /data/arock3/VPT/VPTnav_code/cube_game/job_array/
 ├── slurm_logs/
-├── a_star_launcher.py
-├── a_star_multi_gpu.sh
-├── a_star_worker.sh
-├── generation_worker.sh
-├── launcher.py
-├── multi_gpu.sh
-├── submit_a_star_array.sh
-├── submit_a_star.sh
-└── submit_generation.sh
+├── a_star/
+│   ├── README.md
+│   ├── a_star_launcher.py
+│   ├── a_star_multi_gpu.sh
+│   ├── a_star_worker.sh
+│   ├── submit_a_star_array.sh
+│   └── submit_a_star.sh
+└── normal_vptnav/
+    ├── README.md
+    ├── generation_worker.sh
+    ├── launcher.py
+    ├── multi_gpu.sh
+    └── submit_generation.sh
 ```
 
 A* collection uses:
 
 ```text
-submit_a_star_array.sh -> a_star_worker.sh -> a_star_multi_gpu.sh -> a_star_launcher.py -> scripts/A_star_data_collector.py
+job_array/a_star/submit_a_star_array.sh -> a_star_worker.sh -> a_star_multi_gpu.sh -> a_star_launcher.py -> scripts/A_star_data_collector.py
 ```
 
 Legacy/non-A* generation uses:
 
 ```text
-submit_generation.sh -> generation_worker.sh -> multi_gpu.sh -> launcher.py
+job_array/normal_vptnav/submit_generation.sh -> generation_worker.sh -> multi_gpu.sh -> launcher.py
 ```
 
 ## Cube Game Scripts

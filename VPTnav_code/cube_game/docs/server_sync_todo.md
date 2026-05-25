@@ -14,7 +14,7 @@ Server target root: `/users/arock3/data/arock3/VPT`
 2. Clone `https://github.com/aaronrockmenezes/VPT.git` beside it, e.g.
    `/users/arock3/data/arock3/VPT_git`.
 3. Verify `git log --oneline -3`, `AGENTS.md`, and
-   `VPTnav_code/cube_game/job_array/submit_a_star_array.sh`.
+   `VPTnav_code/cube_game/job_array/a_star/submit_a_star_array.sh`.
 4. Keep heavy runtime artifacts outside git: `isaac-lab.simg`, logs,
    checkpoints, W&B/Hydra outputs, and generated datasets.
 5. Once smoke tests pass, rename the old tree to a backup name and make the
@@ -42,18 +42,18 @@ Server repo root: `/users/arock3/data/arock3/VPT/VPTnav_code/cube_game`
 - [ ] `scripts/keyboard_agent.py`
       — added `camera_move_mode` branch: `"camera-move"` in task name → send `action=5`
       to all envs every step.
-- [ ] `job_array/launcher.py`
+- [ ] `job_array/normal_vptnav/launcher.py`
       — `parse_args` → `parse_known_args`, forwards extra args (`--num_envs`) to the script;
       prefers composite `NODE_ID` env over bare `SLURM_ARRAY_TASK_ID`.
-- [ ] `job_array/multi_gpu.sh`
+- [ ] `job_array/normal_vptnav/multi_gpu.sh`
       — `AGENT_SCRIPT` env-overridable (default `keyboard_agent.py`); appends
       `--num_envs $NUM_ENVS` when set; prefers composite `NODE_ID`.
-- [ ] `job_array/generation_worker.sh`
+- [ ] `job_array/normal_vptnav/generation_worker.sh`
       — REWRITTEN to the overlay-pool apptainer activation (same as `a_star_worker.sh`):
       `--cleanenv --overlay` from a 32-slot pool, per-task `CACHE_ROOT`, conda
       site-packages bind, composite `NODE_ID={job}_{task}`. Dropped old `--writable-tmpfs`
       + host-conda method. No compile step.
-- [ ] `job_array/submit_generation.sh`
+- [ ] `job_array/normal_vptnav/submit_generation.sh`
       — config block set to `TASK="VPT-v18-camera-move"`, added `NUM_ENVS=32`, added
       `NUM_ENVS` to `--export`.
 - [ ] `plan.md`
@@ -87,7 +87,7 @@ their diffs; those edits are intentional.)
 
 1. On the server, stash or back up any local-only server changes first.
 2. `rsync` or `scp` the files above from local → server, preserving paths.
-3. Verify `submit_generation.sh` config block points at the intended `BASE_PATH`.
+3. Verify `job_array/normal_vptnav/submit_generation.sh` config block points at the intended `BASE_PATH`.
 4. Dry-run: `NUM_NODES=1`, small `NUM_ENVS`, check one shard's output tree + a config JSON.
 5. Confirm `monitor_camera_move.py` and `count_saved_envs.py` read the output correctly.
 6. Scale up `NUM_NODES` / `NUM_ENVS`.

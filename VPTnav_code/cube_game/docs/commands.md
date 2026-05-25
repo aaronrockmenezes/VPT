@@ -1,12 +1,79 @@
 # Command Reference
 
-## Camera-Move Collection (`VPT-v18-camera-move`)
+## Preferred Entrypoints
 
-Edit `job_array/submit_generation.sh` config block (`TASK="VPT-v18-camera-move"`,
-`NUM_ENVS`, `BASE_PATH`, `NUM_NODES`, `NUM_GPUS`), then:
+New runs should use the separated wrapper directories:
 
 ```bash
-cd /users/arock3/data/arock3/VPT/VPTnav_code/cube_game/job_array
+cd /users/arock3/data/arock3/VPT
+
+# Normal VPTnav / thesis datasets
+bash scripts/vptnav/submit_vpt1_v18.sh
+bash scripts/vptnav/submit_vpt1_v18_depth.sh
+bash scripts/vptnav/submit_vpt2.sh
+bash scripts/vptnav/build_vpt1.sh
+bash scripts/vptnav/build_vpt1_depth.sh
+bash scripts/vptnav/build_vpt2.sh
+
+# A* rollout datasets
+bash scripts/a_star/submit_v18_a_star.sh
+bash scripts/a_star/count_pool.sh /users/arock3/scratch/VPT_DATA_A_STAR/v18_data_collector_v1 20000
+bash scripts/a_star/compile_all_nodes.sh /users/arock3/scratch/VPT_DATA_A_STAR/v18_data_collector_v1
+bash scripts/a_star/compile_staged.sh /users/arock3/scratch/VPT_DATA_A_STAR/v18_data_collector_v1 /users/arock3/scratch/VPT_DATA_A_STAR/v18_compiled_20k 20000
+bash scripts/a_star/sanity_check.sh /users/arock3/scratch/VPT_DATA_A_STAR/v18_compiled_20k
+```
+
+Active SLURM implementation scripts are also split in-place under
+`VPTnav_code/cube_game/job_array/normal_vptnav/` and
+`VPTnav_code/cube_game/job_array/a_star/`. `VPTnav_code/cube_game/scripts/`
+is unchanged and still owns the agent/data-collector implementation files.
+
+## Normal VPTnav Generation
+
+Normal VPTnav is not A*. It runs through
+`job_array/normal_vptnav/generation_worker.sh` /
+`job_array/normal_vptnav/multi_gpu.sh`, using task-specific agent scripts.
+
+```bash
+cd /users/arock3/data/arock3/VPT
+
+# VPT1 v18, thesis path defaults:
+bash scripts/vptnav/submit_vpt1_v18.sh
+
+# VPT1 v18 depth:
+bash scripts/vptnav/submit_vpt1_v18_depth.sh
+
+# VPT2, defaults to VPT2-v4:
+bash scripts/vptnav/submit_vpt2.sh
+```
+
+Useful overrides:
+
+```bash
+BASE_PATH=/users/arock3/scratch/VPT1_DATA/thesis/v18_vpt_1 \
+NUM_NODES=1 NUM_GPUS=8 NUM_ENVS=96 \
+bash scripts/vptnav/submit_vpt1_v18.sh
+
+TASK=VPT2-v3 BASE_PATH=/users/arock3/scratch/VPT2_DATA/v3 \
+bash scripts/vptnav/submit_vpt2.sh
+```
+
+Dataset builds:
+
+```bash
+bash scripts/vptnav/build_vpt1.sh
+bash scripts/vptnav/build_vpt1_depth.sh
+bash scripts/vptnav/build_vpt2.sh
+```
+
+## Camera-Move Collection (`VPT-v18-camera-move`)
+
+Edit `job_array/normal_vptnav/submit_generation.sh` config block
+(`TASK="VPT-v18-camera-move"`, `NUM_ENVS`, `BASE_PATH`, `NUM_NODES`,
+`NUM_GPUS`), then:
+
+```bash
+cd /users/arock3/data/arock3/VPT/VPTnav_code/cube_game/job_array/normal_vptnav
 bash submit_generation.sh
 ```
 
@@ -38,7 +105,7 @@ python /users/arock3/data/arock3/VPT/VPTnav_code/cube_game/scripts/count_saved_e
 ## Continue A* Generation
 
 ```bash
-cd /users/arock3/data/arock3/VPT/VPTnav_code/cube_game/job_array
+cd /users/arock3/data/arock3/VPT/VPTnav_code/cube_game/job_array/a_star
 bash submit_a_star_array.sh
 ```
 

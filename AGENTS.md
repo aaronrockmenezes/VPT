@@ -36,6 +36,22 @@ Project docs currently live under:
 
 Do not assume cross-chat memory. Treat the markdown files above as the durable project state.
 
+## Workflow Entrypoints
+
+Use separated workflow directories for new runs:
+
+- normal VPTnav/VPT1/VPT2 generation and dataset builds: `scripts/vptnav/`
+- A* rollout counting, compile, sanity checks, and root submit wrappers:
+  `scripts/a_star/`
+- active normal VPTnav SLURM job-array implementation:
+  `VPTnav_code/cube_game/job_array/normal_vptnav/`
+- active A* SLURM job-array implementation:
+  `VPTnav_code/cube_game/job_array/a_star/`
+
+`VPTnav_code/cube_game/scripts/` is intentionally left as-is; it holds the
+agent/data-collector implementation files. Root-level `scripts/` is allowed to
+be divided into workflow wrappers and utilities.
+
 ## Current Operational Note
 
 As of 2026-05-22, this root repository is the canonical git source for the VPT
@@ -47,16 +63,16 @@ Do not reintroduce nested repo state; track source files from this root repo.
 
 The active A* array submit script is:
 
-- `VPTnav_code/cube_game/job_array/submit_a_star_array.sh`
+- `VPTnav_code/cube_game/job_array/a_star/submit_a_star_array.sh`
 
 It currently derives SLURM array max concurrency from:
 
 ```text
-MAX_TOTAL_CPUS=140
-MAX_TOTAL_GPUS=70
+MAX_TOTAL_CPUS=120
+MAX_TOTAL_GPUS=60
 ```
 
-With `CPUS_PER_TASK=6` and `NUM_GPUS=4`, this caps the array at 17 concurrent
+With `CPUS_PER_TASK=12` and `NUM_GPUS=8`, this caps the array at 7 concurrent
 tasks/nodes via `--array=0-${ARRAY_HI}%${MAX_PARALLEL_NODES}`.
 
 ## Cleanup / Documentation TODO

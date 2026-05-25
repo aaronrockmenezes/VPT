@@ -85,7 +85,7 @@ apptainer exec --nv --cleanenv \
   --env FRAC_OCCLUDED="${FRAC_OCCLUDED:-0.25}" \
   --env FRAC_OUTSIDE_FOV="${FRAC_OUTSIDE_FOV:-0.25}" \
   /oscar/home/arock3/data/arock3/VPT/isaac-lab.simg \
-  /mnt/VPT/VPTnav_code/cube_game/job_array/a_star_multi_gpu.sh
+  /mnt/VPT/VPTnav_code/cube_game/job_array/a_star/a_star_multi_gpu.sh
 APPTAINER_RC=$?
 
 echo "[TASK ${TASK_ID}] apptainer exit code: ${APPTAINER_RC}"

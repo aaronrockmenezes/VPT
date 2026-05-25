@@ -16,22 +16,27 @@ explicitly requested.
 
 ## Documentation Cleanup Scope
 
-- [ ] Separate and clearly name the active pipelines:
+- [x] Separate and clearly name the active pipelines:
       normal VPTnav/VPT1 generation, VPT2 generation, A* rollout generation,
-      camera-move generation, linear probes, and fine-tuning.
+      camera-move generation, linear probes, and fine-tuning. Active SLURM
+      generation scripts are split under
+      `VPTnav_code/cube_game/job_array/normal_vptnav/` and
+      `VPTnav_code/cube_game/job_array/a_star/`; root wrappers are split under
+      `scripts/vptnav/` and `scripts/a_star/`.
 
 - [ ] Document normal VPTnav v18 end-to-end:
-      `submit_generation.sh` -> `generation_worker.sh` -> `multi_gpu.sh` ->
-      `keyboard_agent.py` -> `VPT-v18` -> `scripts/utils/build_vpt1_dataset.py`
-      -> LP/FT.
+      `job_array/normal_vptnav/submit_generation.sh` ->
+      `generation_worker.sh` -> `multi_gpu.sh` -> `keyboard_agent.py` ->
+      `VPT-v18` -> `scripts/utils/build_vpt1_dataset.py` -> LP/FT.
 
 - [ ] Document VPT2 end-to-end:
       registered task IDs, expected agent script, output layout, compile/carve
       step, label map, LP/FT commands, and known gotchas.
 
 - [ ] Document A* separately so it is not confused with normal v18.
-      Include when to use `submit_a_star_array.sh`, `compile_a_star_dataset.py`,
-      `make_vpt_probe_split.py`, and world-model handoff docs.
+      Include when to use `job_array/a_star/submit_a_star_array.sh`,
+      `compile_a_star_dataset.py`, `make_vpt_probe_split.py`, and world-model
+      handoff docs.
 
 - [ ] Audit old/stale docs and rewrite or archive misleading sections:
       especially camera-move sync notes that predate the GitHub canonical repo,

@@ -57,8 +57,8 @@ All durable state should be written to markdown in this repo. A new chat should 
 | `scripts/sanity_check_compiled_a_star.py` | Final dataset sanity checker. |
 | `scripts/carve_astar_vpt1_firstframe_probe.py` | Fast first-frame VPT probe carveout. |
 | `scripts/compile_a_star_webdataset.py` | JEPA/world-model WebDataset conversion. |
-| `job_array/submit_a_star_array.sh` | Active SLURM submit file (A*). |
-| `job_array/submit_generation.sh` | SLURM submit file for camera-move / generation runs. |
+| `job_array/a_star/submit_a_star_array.sh` | Active SLURM submit file (A*). |
+| `job_array/normal_vptnav/submit_generation.sh` | SLURM submit file for normal VPTnav / camera-move generation runs. |
 
 ## A* Data Contract
 
@@ -99,8 +99,9 @@ labeled `Yes`/`No` (goal in_view / occluded from camera POV). Label is in the fi
 (`image_{angle}d_{Yes|No}.png`) and the config JSON. No per-env balance; global balance is
 a future carve-time step.
 
-Runs through `submit_generation.sh` → `generation_worker.sh` → `multi_gpu.sh` →
-`launcher.py` → `keyboard_agent.py`. Full handoff: `docs/camera_move_handoff.md`.
+Runs through `job_array/normal_vptnav/submit_generation.sh` →
+`generation_worker.sh` → `multi_gpu.sh` → `launcher.py` →
+`keyboard_agent.py`. Full handoff: `docs/camera_move_handoff.md`.
 
 ## TODO
 
@@ -115,4 +116,4 @@ Runs through `submit_generation.sh` → `generation_worker.sh` → `multi_gpu.sh
 - Do not move server scripts while SLURM jobs are running.
 - Do not use B200 for the old linear-probe PyTorch env; use H100 unless the environment is rebuilt.
 - Before deleting raw dirs, verify compiled output and recount.
-- `job_array/submit_a_star_array.sh` derives SLURM array concurrency from `MAX_TOTAL_CPUS=140` and `MAX_TOTAL_GPUS=70`; with `CPUS_PER_TASK=6` and `NUM_GPUS=4`, this submits at most 17 concurrent array tasks.
+- `job_array/a_star/submit_a_star_array.sh` derives SLURM array concurrency from `MAX_TOTAL_CPUS=120` and `MAX_TOTAL_GPUS=60`; with `CPUS_PER_TASK=12` and `NUM_GPUS=8`, this submits at most 7 concurrent array tasks.

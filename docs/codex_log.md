@@ -450,3 +450,35 @@ the value/metric are written into per-env config JSON.
 
 - Regenerate normal VPT-v18 data for thesis and rebuild with
   `scripts/utils/build_vpt1_dataset.py`.
+
+## 2026-05-25 (5)
+
+**Task:** Split A* and normal VPTnav workflow entrypoints.
+
+**Files changed:**
+
+- `scripts/vptnav/`
+- `scripts/a_star/`
+- `VPTnav_code/cube_game/job_array/normal_vptnav/`
+- `VPTnav_code/cube_game/job_array/a_star/`
+- `AGENTS.md`
+- `VPTnav_code/cube_game/docs/commands.md`
+- `docs/project_todo.md`
+- `docs/codex_log.md`
+
+**Summary:**
+
+Separated active SLURM job-array scripts inside `VPTnav_code/cube_game/job_array/`:
+normal VPTnav generation now lives under `normal_vptnav/`, and A* generation now
+lives under `a_star/`. Root-level wrappers remain split under `scripts/vptnav/`
+and `scripts/a_star/` for quick commands and dataset-build helpers.
+
+**Open questions:**
+
+- Whether to add compatibility shims at the old `job_array/*.sh` paths after
+  server sync, if any old notes or scripts still call those paths directly.
+
+**Next actions:**
+
+- Use `scripts/vptnav/submit_vpt1_v18.sh` for the thesis v18 remake, or edit
+  `VPTnav_code/cube_game/job_array/normal_vptnav/submit_generation.sh` directly.

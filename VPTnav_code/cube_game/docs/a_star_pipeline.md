@@ -5,7 +5,7 @@
 Entry point:
 
 ```bash
-cd /users/arock3/data/arock3/VPT/VPTnav_code/cube_game/job_array
+cd /users/arock3/data/arock3/VPT/VPTnav_code/cube_game/job_array/a_star
 bash submit_a_star_array.sh
 ```
 
@@ -13,10 +13,10 @@ Current continuation-safe submit settings:
 
 ```text
 BASE_PATH=/oscar/scratch/arock3/VPT_DATA_A_STAR/v18_data_collector_v1
-NUM_GPUS=4
-FULL_TARGET=20000
-ENVS_PER_GPU_TARGET=128
-BUFFER_TASKS=10
+NUM_GPUS=8
+FULL_TARGET=30000
+ENVS_PER_GPU_TARGET=48
+BUFFER_TASKS=5
 NUM_ENVS=96
 PLAN_WORKERS=1
 SETTLE_STEPS=30
@@ -25,12 +25,17 @@ START_HALF_EXTENT=6.0
 START_DEADZONE=3.0
 CAM_NO_RED_MAX=0
 RESET_BASE_PATH=0
-USE_GLOBAL_REWEIGHT=1
-DYNAMIC_BALANCE_ALPHA=0.7
+USE_GLOBAL_REWEIGHT=0
+DYNAMIC_BALANCE_ALPHA=0.9
+FRAC_IN_VIEW=0.25
+FRAC_OCCLUDED=0.5
+FRAC_OUTSIDE_FOV=0.25
 COMPILE_MIN_FRAMES=30
-CPUS_PER_TASK=6
-MEM=95G
+CPUS_PER_TASK=12
+MEM=180G
 TIME_PER_TASK=06:00:00
+MAX_TOTAL_CPUS=120
+MAX_TOTAL_GPUS=60
 ```
 
 The job array launches one task per node. Each task runs one process per GPU through `a_star_launcher.py`; each GPU writes raw data under:

@@ -38,10 +38,16 @@ Primary server paths used in active work:
 │   │   ├── audit_cam_deadzone.py
 │   │   └── carve_astar_vpt1_firstframe_probe.py
 │   └── job_array/
-│       ├── submit_a_star_array.sh
-│       ├── a_star_worker.sh
-│       ├── a_star_multi_gpu.sh
-│       └── a_star_launcher.py
+│       ├── a_star/
+│       │   ├── submit_a_star_array.sh
+│       │   ├── a_star_worker.sh
+│       │   ├── a_star_multi_gpu.sh
+│       │   └── a_star_launcher.py
+│       └── normal_vptnav/
+│           ├── submit_generation.sh
+│           ├── generation_worker.sh
+│           ├── multi_gpu.sh
+│           └── launcher.py
 ├── a_star_data_collection_scripts/
 │   └── optional operational mirror of the scripts above
 └── scripts/
@@ -93,7 +99,7 @@ VPT/
 | `source/.../vpt_env_v18_camera_move.py` | Camera-move sweep variant (`VPT-v18-camera-move`). Fixed agent, camera sweeps a right-half arc around the goal. See `docs/camera_move_handoff.md`. |
 | `source/.../vpt_env_v17_alekh.py` | Reference only. Useful for older RL constraints and safe placement patterns, not visual truth. |
 | `scripts/A_star_data_collector.py` | Production collector. Spawns valid starts, uses cached A* plans, saves rollouts. |
-| `job_array/submit_a_star_array.sh` | SLURM submit config for active A* collection. |
+| `job_array/a_star/submit_a_star_array.sh` | SLURM submit config for active A* collection. |
 | `scripts/compile_tasks.py` | Per-array-task validation, staging, and cleanup. |
 | `scripts/compile_a_star_dataset.py` | Final canonical dataset compiler. |
 | `scripts/carve_astar_vpt1_firstframe_probe.py` | Fast 1024-env first-frame VPT linear-probe carveout. |
@@ -179,7 +185,7 @@ Use `compile_a_star_webdataset.py` after final compile to create sharded data.
 
 ## Non-Negotiable Safety Notes
 
-- Do not run `submit_a_star_array.sh` with `RESET_BASE_PATH=1` unless intentionally deleting the current run.
+- Do not run `job_array/a_star/submit_a_star_array.sh` with `RESET_BASE_PATH=1` unless intentionally deleting the current run.
 - Do not move server-side scripts during active SLURM runs.
 - Do not assume B200 works with the existing `vpt_env` PyTorch stack; use H100 for linear probes unless the env is rebuilt.
 - Do not rely on hidden cross-chat memory; read `MEMORY.md` and `docs/world_model_handoff.md`.

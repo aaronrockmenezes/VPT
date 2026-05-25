@@ -63,7 +63,8 @@ The label is stored in **two places**:
 ## Execution Flow
 
 ```
-submit_generation.sh                  # edit config block: TASK, NUM_ENVS, BASE_PATH, NUM_NODES, NUM_GPUS
+job_array/normal_vptnav/submit_generation.sh
+                                      # edit config block: TASK, NUM_ENVS, BASE_PATH, NUM_NODES, NUM_GPUS
    │  sbatch --array, --export=...
    ▼
 generation_worker.sh                  # SLURM worker — overlay-pool apptainer activation
@@ -113,7 +114,7 @@ the path. Camera-object POV gets three own dirs (was previously one flat `cam/`)
 
 ## How To Run
 
-Edit `job_array/submit_generation.sh` config block:
+Edit `job_array/normal_vptnav/submit_generation.sh` config block:
 
 ```bash
 BASE_PATH="/oscar/scratch/arock3/VPT1_DATA/camera/v18_4"
@@ -126,7 +127,7 @@ NUM_ENVS=32          # parallel envs per GPU — tunable
 Then:
 
 ```bash
-cd /users/arock3/data/arock3/VPT/VPTnav_code/cube_game/job_array
+cd /users/arock3/data/arock3/VPT/VPTnav_code/cube_game/job_array/normal_vptnav
 bash submit_generation.sh
 ```
 
@@ -151,10 +152,10 @@ python scripts/count_saved_envs.py --base_path <BASE_PATH> --verify         # cr
 | `source/.../tasks/direct/cube_game/vpt_env_v18_camera_move.py` | The camera-move env. All collection logic lives here. |
 | `source/.../tasks/direct/cube_game/__init__.py` | Registers gym id `VPT-v18-camera-move`. |
 | `scripts/keyboard_agent.py` | Driver — camera-move branch sends `action=5` every step. |
-| `job_array/submit_generation.sh` | SLURM submit — edit the config block to launch. |
-| `job_array/generation_worker.sh` | SLURM worker — overlay-pool apptainer activation. |
-| `job_array/multi_gpu.sh` | In-container launcher dispatch. |
-| `job_array/launcher.py` | Spawns one process per GPU. |
+| `job_array/normal_vptnav/submit_generation.sh` | SLURM submit — edit the config block to launch. |
+| `job_array/normal_vptnav/generation_worker.sh` | SLURM worker — overlay-pool apptainer activation. |
+| `job_array/normal_vptnav/multi_gpu.sh` | In-container launcher dispatch. |
+| `job_array/normal_vptnav/launcher.py` | Spawns one process per GPU. |
 | `scripts/monitor_camera_move.py` | Yes/No progress + 50/50 feasibility monitor. |
 | `scripts/count_saved_envs.py` | Counts successfully saved envs. |
 

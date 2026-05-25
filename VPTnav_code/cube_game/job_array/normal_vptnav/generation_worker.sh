@@ -79,7 +79,7 @@ apptainer exec --nv --cleanenv \
   --env AGENT_SCRIPT="${AGENT_SCRIPT:-}" \
   --env NUM_ENVS="${NUM_ENVS:-}" \
   /oscar/home/arock3/data/arock3/VPT/isaac-lab.simg \
-  /mnt/VPT/VPTnav_code/cube_game/job_array/multi_gpu.sh
+  /mnt/VPT/VPTnav_code/cube_game/job_array/normal_vptnav/multi_gpu.sh
 APPTAINER_RC=$?
 
 echo "[TASK ${TASK_ID}] apptainer exit code: ${APPTAINER_RC}"

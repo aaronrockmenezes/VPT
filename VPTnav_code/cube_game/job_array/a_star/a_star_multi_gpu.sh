@@ -9,7 +9,7 @@ set -euo pipefail
 DATA_DIR="${BASE_PATH}/data"
 mkdir -p "$DATA_DIR"
 
-LAUNCHER="/mnt/VPT/VPTnav_code/cube_game/job_array/a_star_launcher.py"
+LAUNCHER="/mnt/VPT/VPTnav_code/cube_game/job_array/a_star/a_star_launcher.py"
 ISAAC_SH="/workspace/isaaclab/isaaclab.sh"
 
 echo "[CONTAINER] task=${TASK_ID}  GPUs=${NUM_GPUS}  isaac_task=${TASK}"
