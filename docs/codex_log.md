@@ -368,3 +368,31 @@ heavy runtime artifacts outside git.
 - Start current VPT1/VPT2 data/runs first.
 - Later, migrate Oscar to the canonical GitHub repo and update `MEMORY.md` after
   verification.
+
+## 2026-05-25 (2)
+
+**Task:** Add cleanup/wiki/FAQ backlog.
+
+**Files changed:**
+
+- `docs/project_todo.md`
+- `AGENTS.md`
+- `docs/codex_log.md`
+
+**Summary:**
+
+Added a repo-local project TODO for a future full cleanup and documentation pass.
+The backlog explicitly calls for a private local wiki plus FAQ covering normal
+VPTnav/VPT1 generation, VPT2 generation, A* rollouts, camera-move generation,
+dataset count/compile/validation, linear probing, fine-tuning, server migration,
+and generated-artifact hygiene.
+
+**Open questions:**
+
+- Exact structure of the local private wiki and whether it should live entirely
+  under `docs/` or split root docs from `VPTnav_code/cube_game/docs/`.
+
+**Next actions:**
+
+- After current runs are launched, do the cleanup/doc pass before starting more
+  large workflow changes.

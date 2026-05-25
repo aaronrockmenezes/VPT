@@ -31,6 +31,7 @@ Project docs currently live under:
 - `VPTnav_code/cube_game/MEMORY.md`
 - `VPTnav_code/cube_game/docs/wiki.md`
 - `VPTnav_code/cube_game/docs/world_model_handoff.md`
+- `docs/project_todo.md`
 - `docs/codex_log.md`
 
 Do not assume cross-chat memory. Treat the markdown files above as the durable project state.
@@ -57,3 +58,14 @@ MAX_TOTAL_GPUS=70
 
 With `CPUS_PER_TASK=6` and `NUM_GPUS=4`, this caps the array at 17 concurrent
 tasks/nodes via `--array=0-${ARRAY_HI}%${MAX_PARALLEL_NODES}`.
+
+## Cleanup / Documentation TODO
+
+The repo needs a full cleanup and documentation pass, tracked in:
+
+- `docs/project_todo.md`
+
+That pass should produce a private local wiki and FAQ covering normal VPTnav
+VPT1 generation, VPT2 generation, A* rollouts, camera-move generation, dataset
+count/compile/validation, linear probing, fine-tuning, server migration, and
+which generated artifacts must stay out of git.
