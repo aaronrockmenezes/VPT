@@ -5,9 +5,11 @@ Aggregates VPT1 environments from multiple source directories into a
 single re-indexed dataset with train/test splits.
 
 Pipeline:
-  1. QC   - cam_pov checked first; fail → blacklist immediately
-           - all semantic images checked next; any single fail → blacklist
-             (semantic QC: red >= SEMANTIC_RED_THRESHOLD AND green >= SEMANTIC_GREEN_THRESHOLD)
+  1. QC   - cam_pov checked first using A*-style semantic constraints;
+             fail → blacklist immediately
+           - RGB/Semantic image counts must match EXPECTED_IMAGES_PER_ENV
+           - all semantic images checked next; too many color failures → blacklist
+             (semantic QC: red goal + green camera object visible)
   2. Pool  - valid envs bucketed by visibility reason (in_view/occluded/outside_fov)
   3. Alloc - each bucket sampled to SPLIT_TARGETS, 50/50 train/test, re-indexed
   4. Copy  - RGB, Depth, Semantic, cam, configs → OUTPUT_DIR; master JSON written
@@ -16,9 +18,13 @@ Pipeline:
 Assumptions:
   - Source dirs match data_node<N>_gpu<N> inside BASE_DIR
   - Labels: 'Yes' / 'No', reasons: 'in_view', 'occluded', 'outside_fov'
-  - cam_pov QC: Yes → red >= CAM_RED_THRESHOLD; No → red < CAM_RED_THRESHOLD
-  - Semantic QC: every image must be readable AND red >= SEMANTIC_RED_THRESHOLD
-                 AND green >= SEMANTIC_GREEN_THRESHOLD
+  - cam_pov QC follows compile_a_star_dataset.py:
+      Yes → strict-red count > CAM_RED_THRESHOLD scaled to image area
+      No  → strict-red count <= CAM_NO_RED_MAX scaled to image area
+             AND no unlabeled circular blob
+  - Semantic QC: every image must be readable and mostly keep both VPT objects:
+      red goal count > SEMANTIC_RED_THRESHOLD scaled to image area
+      green camera presence > SEMANTIC_GREEN_MIN_PX scaled to image area
   - No pink check in VPT1 (no reference object)
   - Missing semantic folder is a hard reject
   - Train/test split folder contains RGB only
@@ -49,12 +55,18 @@ SPLIT_TARGETS = {
     "occluded":     8 * M,
 }
 
-# Cam POV QC threshold — declared separately from semantic
-CAM_RED_THRESHOLD = 500
+# A*-style semantic QC thresholds calibrated at 256x256.
+# 125 px at 256x256 is area-equivalent to the old 500 px at 512x512.
+REF_SIDE = 256
+REF_AREA = REF_SIDE * REF_SIDE
+CAM_RED_THRESHOLD = 125
+CAM_NO_RED_MAX = 0
+CONTOUR_MIN_AREA = 50
 
-# Semantic QC thresholds — declared separately from cam
-SEMANTIC_RED_THRESHOLD   = 400
-SEMANTIC_GREEN_THRESHOLD = 900
+# Agent-POV semantic QC. Red uses the same A* threshold; green uses the
+# A* HSV presence check threshold.
+SEMANTIC_RED_THRESHOLD = 125
+SEMANTIC_GREEN_MIN_PX = 5
 
 # How many semantic images per env are allowed to fail red/green thresholds
 # and still have the env pass. 0 = current strict behaviour (any fail → reject).
@@ -73,6 +85,22 @@ LABELS_FILENAME  = "visibility_labels.json"
 IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.bmp', '.tiff'}
 
 # ── QC HELPERS ────────────────────────────────────────────────────────────────
+
+def _scale_to_img(img_bgr: np.ndarray, ref_count: int) -> int:
+    """Scale a 256x256-calibrated pixel threshold to image area."""
+    if ref_count <= 0:
+        return 0
+    h, w = img_bgr.shape[:2]
+    return max(1, int(round(ref_count * (h * w) / REF_AREA)))
+
+
+def _image_files(path: Path) -> list[str]:
+    if not path.exists():
+        return []
+    return sorted(
+        f for f in os.listdir(path)
+        if Path(f).suffix.lower() in IMAGE_EXTENSIONS
+    )
 
 def _red_pixel_count(img_bgr: np.ndarray) -> int:
     if img_bgr is None:
@@ -98,18 +126,55 @@ def _green_pixel_count(img_bgr: np.ndarray) -> int:
     return int(mask.sum())
 
 
+def _has_green_hsv(img_bgr: np.ndarray, threshold: int | None = None) -> bool:
+    """A*-style non-trivial green presence check."""
+    if img_bgr is None:
+        return False
+    if threshold is None:
+        threshold = _scale_to_img(img_bgr, SEMANTIC_GREEN_MIN_PX)
+    hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(hsv, np.array([35, 50, 50]), np.array([85, 255, 255]))
+    return cv2.countNonZero(mask) > threshold
+
+
+def _has_circle(img_bgr: np.ndarray, fill_thresh: float = 0.80,
+                min_area: int | None = None) -> bool:
+    """A*-style circle rejection used for No cam-POV semantic images."""
+    if img_bgr is None:
+        return False
+    if min_area is None:
+        min_area = _scale_to_img(img_bgr, CONTOUR_MIN_AREA)
+    gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+    _, thresh = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY)
+    cnts, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL,
+                               cv2.CHAIN_APPROX_NONE)
+    for contour in cnts:
+        area = cv2.contourArea(contour)
+        if area < min_area:
+            continue
+        (_, _), radius = cv2.minEnclosingCircle(contour)
+        circle_area = np.pi * radius * radius
+        if circle_area and (area / circle_area) > fill_thresh:
+            return True
+    return False
+
+
 def check_cam_pov(src_root: str, label: str, env_id: str) -> tuple[bool, str]:
     path = Path(src_root) / FOLDERS["cam"] / label / f"env_{env_id}" / "cam_pov.png"
     img = cv2.imread(str(path), cv2.IMREAD_COLOR)
     if img is None:
         return False, "cam_pov.png missing or unreadable"
     red = _red_pixel_count(img)
+    yes_thresh = _scale_to_img(img, CAM_RED_THRESHOLD)
+    no_max = _scale_to_img(img, CAM_NO_RED_MAX)
     if label == "Yes":
-        if red < CAM_RED_THRESHOLD:
-            return False, f"Yes env: red={red} < {CAM_RED_THRESHOLD}"
+        if red <= yes_thresh:
+            return False, f"Yes env: red={red} <= {yes_thresh}"
     else:
-        if red >= CAM_RED_THRESHOLD:
-            return False, f"No env: red={red} >= {CAM_RED_THRESHOLD} (goal visible when it shouldn't be)"
+        if red > no_max:
+            return False, f"No env: red={red} > {no_max} (goal visible/deadzone)"
+        if _has_circle(img):
+            return False, "No env: circular blob detected in cam_pov"
     return True, ""
 
 
@@ -117,10 +182,7 @@ def check_semantic_images(src_root: str, label: str, env_id: str) -> tuple[bool,
     sem_dir = Path(src_root) / FOLDERS["semantic"] / label / f"env_{env_id}"
     if not sem_dir.exists():
         return False, "Semantic folder missing"
-    files = sorted(
-        f for f in os.listdir(sem_dir)
-        if Path(f).suffix.lower() in IMAGE_EXTENSIONS
-    )
+    files = _image_files(sem_dir)
     if len(files) != EXPECTED_IMAGES_PER_ENV:
         return False, f"Expected {EXPECTED_IMAGES_PER_ENV} semantic images, found {len(files)}"
     threshold_failures = []
@@ -128,13 +190,17 @@ def check_semantic_images(src_root: str, label: str, env_id: str) -> tuple[bool,
         img = cv2.imread(str(sem_dir / fname), cv2.IMREAD_COLOR)
         if img is None:
             return False, f"Unreadable: {fname}"  # hard fail — data corruption
+        red_thresh = _scale_to_img(img, SEMANTIC_RED_THRESHOLD)
         red = _red_pixel_count(img)
-        if red < SEMANTIC_RED_THRESHOLD:
-            threshold_failures.append(f"{fname}: red={red} < {SEMANTIC_RED_THRESHOLD}")
+        if red <= red_thresh:
+            threshold_failures.append(f"{fname}: red={red} <= {red_thresh}")
             continue
-        green = _green_pixel_count(img)
-        if green < SEMANTIC_GREEN_THRESHOLD:
-            threshold_failures.append(f"{fname}: green={green} < {SEMANTIC_GREEN_THRESHOLD}")
+        if not _has_green_hsv(img):
+            green = _green_pixel_count(img)
+            green_thresh = _scale_to_img(img, SEMANTIC_GREEN_MIN_PX)
+            threshold_failures.append(
+                f"{fname}: green_hsv<=threshold strict_green={green} "
+                f"threshold={green_thresh}")
 
     if len(threshold_failures) > SEMANTIC_FAIL_TOLERANCE:
         return False, threshold_failures[0]  # report first failure as the reason
@@ -155,12 +221,14 @@ def verify_environment(src_root: str, env_id: str, label: str) -> tuple[bool, st
             return False, f"Missing: {p.name}"
 
     try:
-        rgb_count = sum(
-            1 for f in os.listdir(p_rgb)
-            if Path(f).suffix.lower() in IMAGE_EXTENSIONS
-        )
+        rgb_count = len(_image_files(p_rgb))
         if rgb_count != EXPECTED_IMAGES_PER_ENV:
             return False, f"RGB count: {rgb_count} != {EXPECTED_IMAGES_PER_ENV}"
+        sem_count = len(_image_files(p_semantic))
+        if sem_count != EXPECTED_IMAGES_PER_ENV:
+            return False, f"Semantic count: {sem_count} != {EXPECTED_IMAGES_PER_ENV}"
+        if rgb_count != sem_count:
+            return False, f"RGB/Semantic count mismatch: {rgb_count}!={sem_count}"
     except OSError as e:
         return False, f"OSError reading RGB: {e}"
 
@@ -180,6 +248,8 @@ def _is_missing(fail_reason: str) -> bool:
     return (
         fail_reason.startswith("Missing:")
         or fail_reason.startswith("RGB count:")
+        or fail_reason.startswith("Semantic count:")
+        or fail_reason.startswith("RGB/Semantic count mismatch:")
         or fail_reason.startswith("OSError")
     )
 
@@ -300,7 +370,13 @@ def main():
         src_accepted = 0
         src_rejected = 0
         src_missing  = 0
-        rej = {"cam_red": 0, "sem_red": 0, "sem_green": 0, "misc": 0}
+        rej = {
+            "cam_red": 0,
+            "cam_circle": 0,
+            "sem_red": 0,
+            "sem_green": 0,
+            "misc": 0,
+        }
 
         for env_id, info in sorted(
             vis_data.get("environments", {}).items(), key=lambda x: int(x[0])
@@ -333,6 +409,8 @@ def main():
                 # ── categorise rejection ──────────────────────────────────
                 if fail_reason.startswith("cam_pov fail:") and "red=" in fail_reason:
                     rej["cam_red"] += 1
+                elif fail_reason.startswith("cam_pov fail:") and "circular blob" in fail_reason:
+                    rej["cam_circle"] += 1
                 elif fail_reason.startswith("semantic fail:") and ": red=" in fail_reason:
                     rej["sem_red"] += 1
                 elif fail_reason.startswith("semantic fail:") and ": green=" in fail_reason:
@@ -342,7 +420,8 @@ def main():
 
         print(
             f"  → Accepted: {src_accepted} | Rejected: {src_rejected}"
-            f"  (cam_red={rej['cam_red']}  sem_red={rej['sem_red']}"
+            f"  (cam_red={rej['cam_red']}  cam_circle={rej['cam_circle']}"
+            f"  sem_red={rej['sem_red']}"
             f"  sem_green={rej['sem_green']}  misc={rej['misc']})"
             f" | Missing: {src_missing}"
         )

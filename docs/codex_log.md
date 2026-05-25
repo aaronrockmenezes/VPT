@@ -396,3 +396,30 @@ and generated-artifact hygiene.
 
 - After current runs are launched, do the cleanup/doc pass before starting more
   large workflow changes.
+
+## 2026-05-25 (3)
+
+**Task:** Align normal VPT1 builder QC with A* color constraints.
+
+**Files changed:**
+
+- `scripts/utils/build_vpt1_dataset.py`
+- `docs/codex_log.md`
+
+**Summary:**
+
+Updated the normal VPT1 dataset builder to use A*-style semantic validation:
+256-calibrated area-scaled strict-red thresholds, `No` cam-POV requiring zero
+strict-red pixels plus circular-blob rejection, HSV green-presence checks for
+agent semantic frames, and explicit RGB/Semantic image-count matching before
+copying environments into the final train/test dataset.
+
+**Open questions:**
+
+- Whether `SEMANTIC_FAIL_TOLERANCE=1` should stay permissive or be tightened to
+  `0` for production v18 builds.
+
+**Next actions:**
+
+- Run the builder on the current v18 pool and inspect accepted/rejected counts,
+  especially `cam_red`, `cam_circle`, `sem_red`, and `sem_green`.
