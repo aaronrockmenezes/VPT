@@ -16,7 +16,8 @@ Pipeline:
   5. Validate - structural correctness verified post-copy
 
 Assumptions:
-  - Source dirs match data_node<N>_gpu<N> inside BASE_DIR
+  - Source dirs match data_node<N>_gpu<N> or data_node<JOB>_<TASK>_gpu<N>
+    inside BASE_DIR
   - Labels: 'Yes' / 'No', reasons: 'in_view', 'occluded', 'outside_fov'
   - cam_pov QC follows compile_a_star_dataset.py:
       Yes → strict-red count > CAM_RED_THRESHOLD scaled to image area
@@ -38,10 +39,10 @@ from tqdm import tqdm
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 
-BASE_DIR    = "/users/arock3/scratch/VPT1_DATA/v18_3/data"
-DIR_PATTERN = r"^data_node\d+_gpu\d+$"
+BASE_DIR = "/users/arock3/scratch/VPT1_DATA/thesis/v18_vpt_1/data"
+DIR_PATTERN = r"^data_node(?:\d+|\d+_\d+)_gpu\d+$"
 
-OUTPUT_DIR              = "/users/arock3/scratch/VPT1_v18_v3_finer"
+OUTPUT_DIR = "/users/arock3/scratch/THESIS/VPT_1_v18"
 EXPECTED_IMAGES_PER_ENV = 10
 
 M            = 2 ** 3
