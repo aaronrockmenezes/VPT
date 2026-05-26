@@ -482,3 +482,32 @@ and `scripts/a_star/` for quick commands and dataset-build helpers.
 
 - Use `scripts/vptnav/submit_vpt1_v18.sh` for the thesis v18 remake, or edit
   `VPTnav_code/cube_game/job_array/normal_vptnav/submit_generation.sh` directly.
+
+## 2026-05-26
+
+**Task:** Fix missing USD source assets in clean server clone.
+
+**Files changed:**
+
+- `VPTnav_code/cube_game/.gitignore`
+- `VPTnav_code/cube_game/assets/*.usd`
+- `VPTnav_code/cube_game/assets/*/*.usd`
+- `VPTnav_code/cube_game/mass_assets/*.usd`
+- `VPTnav_code/cube_game/source/cube_game/cube_game/tasks/direct/cube_game/*.usd`
+- `docs/codex_log.md`
+
+**Summary:**
+
+Server smoke test failed because `VPT-v18` loads
+`/mnt/VPT/VPTnav_code/cube_game/assets/new_cam_latest.usd`, but the clean Git
+clone did not include USD assets. The old cube-game `.gitignore` blocked all
+USD files. Added exceptions for source USD assets needed by registered VPT
+tasks and staged the local source assets so `git pull` restores them on Oscar.
+
+**Open questions:**
+
+- Whether to later prune legacy USDs after a full file-map audit.
+
+**Next actions:**
+
+- Pull on Oscar and rerun the VPT-v18 smoke job.

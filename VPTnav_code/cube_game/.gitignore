@@ -8,11 +8,17 @@
 **/*.dmp
 **/.thumbs
 
-# No USD files allowed in the repo
+# Ignore generated USD dumps by default, but keep source assets needed by
+# registered VPT tasks runnable from a clean clone.
 **/*.usd
 **/*.usda
 **/*.usdc
 **/*.usdz
+!3dpc_cam.usd
+!ImageToStl_com_arrow.usd
+!assets/**/*.usd
+!mass_assets/**/*.usd
+!source/cube_game/cube_game/tasks/direct/cube_game/*.usd
 
 # Python
 .DS_Store
