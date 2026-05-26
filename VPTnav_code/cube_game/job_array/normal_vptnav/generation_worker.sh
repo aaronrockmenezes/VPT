@@ -6,7 +6,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=3
 #SBATCH --mem=50G
-#SBATCH --time=36:00:00
+#SBATCH --time=01:00:00
 # ============================================================
 #  Per-node SLURM worker for generation / camera-move collection.
 #  Uses the overlay-pool apptainer activation (same as a_star_worker.sh),
