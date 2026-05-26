@@ -15,8 +15,8 @@ output_dirs=(
     "/users/arock3/scratch/VPT_logs/thesis/VPT_1_v18_tmp_count/ft_logs"
 )
 
-# Fine-tuning is heavier than LP; keep model list explicit.
-FT_MODELS_FILE="${FT_MODELS_FILE:-ft_models.txt}"
+# Full fine-tune sweep. Override with FT_MODELS_FILE=ft_models.txt for smoke tests.
+FT_MODELS_FILE="${FT_MODELS_FILE:-models.txt}"
 
 FT_NUM_RUNS=3
 FT_EPOCHS=30
