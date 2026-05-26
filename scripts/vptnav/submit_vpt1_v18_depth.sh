@@ -12,6 +12,7 @@ NUM_GPUS="${NUM_GPUS:-8}"
 TASK="${TASK:-VPT-v18-Depth}"
 NUM_NODES="${NUM_NODES:-30}"
 NUM_ENVS="${NUM_ENVS:-96}"
+TIME_LIMIT="${TIME_LIMIT:-03:00:00}"
 AGENT_SCRIPT="${AGENT_SCRIPT:-/mnt/VPT/VPTnav_code/cube_game/scripts/vptnav/keyboard_agent.py}"
 
 LOG_DIR="${BASE_PATH}/logs"
@@ -20,12 +21,13 @@ mkdir -p "${LOG_DIR}" "${DATA_DIR}"
 
 echo "[VPTNAV] VPT1 v18 depth generation"
 echo "  base=${BASE_PATH}"
-echo "  task=${TASK} nodes=${NUM_NODES} gpus/node=${NUM_GPUS} envs/gpu=${NUM_ENVS}"
+echo "  task=${TASK} nodes=${NUM_NODES} gpus/node=${NUM_GPUS} envs/gpu=${NUM_ENVS} time=${TIME_LIMIT}"
 echo "  agent=${AGENT_SCRIPT}"
 
 cd "${JOB_DIR}"
 sbatch --array=0-$((NUM_NODES - 1)) \
   --gres=gpu:${NUM_GPUS} \
+  --time=${TIME_LIMIT} \
   --output=${LOG_DIR}/worker_%A_%a.out \
   --error=${LOG_DIR}/worker_%A_%a.err \
   --export=ALL,BASE_PATH=${BASE_PATH},NUM_GPUS=${NUM_GPUS},TASK=${TASK},NUM_ENVS=${NUM_ENVS},AGENT_SCRIPT=${AGENT_SCRIPT} \
