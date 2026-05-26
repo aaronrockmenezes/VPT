@@ -12,7 +12,7 @@ NUM_GPUS="${NUM_GPUS:-8}"
 TASK="${TASK:-VPT2-v4}"
 NUM_NODES="${NUM_NODES:-30}"
 NUM_ENVS="${NUM_ENVS:-36}"
-AGENT_SCRIPT="${AGENT_SCRIPT:-/mnt/VPT/VPTnav_code/cube_game/scripts/vpt2_keyboard_agent.py}"
+AGENT_SCRIPT="${AGENT_SCRIPT:-/mnt/VPT/VPTnav_code/cube_game/scripts/vptnav/vpt2_keyboard_agent.py}"
 
 LOG_DIR="${BASE_PATH}/logs"
 DATA_DIR="${BASE_PATH}/data"

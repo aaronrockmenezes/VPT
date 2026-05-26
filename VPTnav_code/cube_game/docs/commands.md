@@ -80,7 +80,7 @@ bash submit_generation.sh
 Local single-GPU dry run:
 
 ```bash
-isaaclab.sh -p scripts/keyboard_agent.py --task VPT-v18-camera-move --num_envs 8
+isaaclab.sh -p scripts/vptnav/keyboard_agent.py --task VPT-v18-camera-move --num_envs 8
 ```
 
 Monitor Yes/No balance + 50/50 feasibility:
@@ -95,7 +95,7 @@ python /users/arock3/data/arock3/VPT/VPTnav_code/cube_game/scripts/monitor_camer
 Count successfully saved envs:
 
 ```bash
-python /users/arock3/data/arock3/VPT/VPTnav_code/cube_game/scripts/count_saved_envs.py \
+python /users/arock3/data/arock3/VPT/VPTnav_code/cube_game/scripts/vptnav/count_saved_envs.py \
   --base_path /oscar/scratch/arock3/VPT1_DATA/camera/v18_4 \
   --verify
 ```

@@ -141,8 +141,8 @@ python scripts/monitor_camera_move.py --base_path <BASE_PATH> --target 100
 python scripts/monitor_camera_move.py --base_path <BASE_PATH> --watch 30   # live refresh
 
 # Count successfully saved envs (config JSON present == complete env)
-python scripts/count_saved_envs.py --base_path <BASE_PATH>
-python scripts/count_saved_envs.py --base_path <BASE_PATH> --verify         # cross-check images
+python scripts/vptnav/count_saved_envs.py --base_path <BASE_PATH>
+python scripts/vptnav/count_saved_envs.py --base_path <BASE_PATH> --verify         # cross-check images
 ```
 
 ## Key Files
@@ -151,13 +151,13 @@ python scripts/count_saved_envs.py --base_path <BASE_PATH> --verify         # cr
 |---|---|
 | `source/.../tasks/direct/cube_game/vpt_env_v18_camera_move.py` | The camera-move env. All collection logic lives here. |
 | `source/.../tasks/direct/cube_game/__init__.py` | Registers gym id `VPT-v18-camera-move`. |
-| `scripts/keyboard_agent.py` | Driver — camera-move branch sends `action=5` every step. |
+| `scripts/vptnav/keyboard_agent.py` | Driver — camera-move branch sends `action=5` every step. |
 | `job_array/normal_vptnav/submit_generation.sh` | SLURM submit — edit the config block to launch. |
 | `job_array/normal_vptnav/generation_worker.sh` | SLURM worker — overlay-pool apptainer activation. |
 | `job_array/normal_vptnav/multi_gpu.sh` | In-container launcher dispatch. |
 | `job_array/normal_vptnav/launcher.py` | Spawns one process per GPU. |
 | `scripts/monitor_camera_move.py` | Yes/No progress + 50/50 feasibility monitor. |
-| `scripts/count_saved_envs.py` | Counts successfully saved envs. |
+| `scripts/vptnav/count_saved_envs.py` | Counts successfully saved envs. |
 
 ## Known Gaps / TODO
 

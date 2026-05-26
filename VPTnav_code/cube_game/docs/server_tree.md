@@ -50,7 +50,7 @@ The local repo now mirrors this shape at `/Users/aaronrockmenezes/Desktop/Serre 
 A* collection uses:
 
 ```text
-job_array/a_star/submit_a_star_array.sh -> a_star_worker.sh -> a_star_multi_gpu.sh -> a_star_launcher.py -> scripts/A_star_data_collector.py
+job_array/a_star/submit_a_star_array.sh -> a_star_worker.sh -> a_star_multi_gpu.sh -> a_star_launcher.py -> scripts/a_star/A_star_data_collector.py
 ```
 
 Legacy/non-A* generation uses:
@@ -65,13 +65,18 @@ job_array/normal_vptnav/submit_generation.sh -> generation_worker.sh -> multi_gp
 /data/arock3/VPT/VPTnav_code/cube_game/scripts/
 ├── sb3/
 ├── skrl/
-├── A_star_agent.py
-├── A_star_automatic_agent.py
-├── A_star_data_collector.py
-├── compile_results.py
-├── launcher_2.py
-├── list_envs.py
-└── ... A* compile/audit/sanity utilities ...
+├── a_star/
+│   ├── A_star_agent.py
+│   ├── A_star_automatic_agent.py
+│   ├── A_star_data_collector.py
+│   └── compile_dataset.sh
+└── vptnav/
+    ├── keyboard_agent.py
+    ├── vpt2_keyboard_agent.py
+    ├── count_saved_envs.py
+    ├── list_envs.py
+    ├── random_agent.py
+    └── zero_agent.py
 ```
 
 Some A* compile/audit utilities are mirrored into `/data/arock3/VPT/a_star_data_collection_scripts/` for convenience. When changing an A* utility, confirm which copy the server command is using.
@@ -81,7 +86,7 @@ Some A* compile/audit utilities are mirrored into `/data/arock3/VPT/a_star_data_
 Before running a command copied from docs, verify the file exists at the path being invoked:
 
 ```bash
-ls -lh /users/arock3/data/arock3/VPT/VPTnav_code/cube_game/scripts/A_star_data_collector.py
+ls -lh /users/arock3/data/arock3/VPT/VPTnav_code/cube_game/scripts/a_star/A_star_data_collector.py
 ls -lh /users/arock3/data/arock3/VPT/a_star_data_collection_scripts/count_successful_envs.py
 ```
 

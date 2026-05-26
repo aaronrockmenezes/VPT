@@ -46,12 +46,12 @@ All durable state should be written to markdown in this repo. A new chat should 
 
 | File | Use |
 |---|---|
-| `scripts/A_star_data_collector.py` | Production A* rollout collector. |
-| `scripts/keyboard_agent.py` | Generation driver. Camera-move branch: `"camera-move"` in task name → sends `action=5` (soft reset) every step. |
+| `scripts/a_star/A_star_data_collector.py` | Production A* rollout collector. |
+| `scripts/vptnav/keyboard_agent.py` | Generation driver. Camera-move branch: `"camera-move"` in task name → sends `action=5` (soft reset) every step. |
 | `scripts/compile_tasks.py` | Per-node validation/staging/cleanup. |
 | `scripts/compile_all_nodes.py` | Compile existing raw node dirs. |
 | `scripts/count_successful_envs.py` | Count raw/compiled A* collection pool. |
-| `scripts/count_saved_envs.py` | Count successfully saved camera-move envs (per shard + total). |
+| `scripts/vptnav/count_saved_envs.py` | Count successfully saved camera-move envs (per shard + total). |
 | `scripts/monitor_camera_move.py` | Camera-move Yes/No progress + 50/50 feasibility monitor. |
 | `scripts/compile_a_star_dataset.py` | Final canonical dataset compiler. |
 | `scripts/sanity_check_compiled_a_star.py` | Final dataset sanity checker. |

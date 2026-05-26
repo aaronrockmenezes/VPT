@@ -4,7 +4,7 @@
 NODE_ID="${NODE_ID:-${SLURM_ARRAY_TASK_ID:-0}}"
 DATA_DIR="${BASE_PATH}/data"
 
-AGENT_SCRIPT="${AGENT_SCRIPT:-/mnt/VPT/VPTnav_code/cube_game/scripts/keyboard_agent.py}"
+AGENT_SCRIPT="${AGENT_SCRIPT:-/mnt/VPT/VPTnav_code/cube_game/scripts/vptnav/keyboard_agent.py}"
 # override via env: AGENT_SCRIPT=/mnt/VPT/.../camera_move_collector.py
 LAUNCHER_SCRIPT="/mnt/VPT/VPTnav_code/cube_game/job_array/normal_vptnav/launcher.py"
 ISAAC_SH="/workspace/isaaclab/isaaclab.sh"

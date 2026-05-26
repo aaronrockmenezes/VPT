@@ -121,7 +121,7 @@ downsamples each split to exact 50/25/25 over `in_view`/`occluded`/`outside_fov`
 
 **Files changed:**
 
-- `VPTnav_code/cube_game/scripts/count_saved_envs.py`
+- `VPTnav_code/cube_game/scripts/vptnav/count_saved_envs.py`
 - `docs/codex_log.md`
 
 **Summary:**
@@ -511,3 +511,36 @@ tasks and staged the local source assets so `git pull` restores them on Oscar.
 **Next actions:**
 
 - Pull on Oscar and rerun the VPT-v18 smoke job.
+
+## 2026-05-26 (2)
+
+**Task:** Split cube-game scripts by workflow and remove old probe launchers.
+
+**Files changed:**
+
+- `VPTnav_code/cube_game/scripts/`
+- `VPTnav_code/cube_game/job_array/a_star/a_star_launcher.py`
+- `VPTnav_code/cube_game/job_array/normal_vptnav/multi_gpu.sh`
+- `scripts/vptnav/submit_vpt1_v18.sh`
+- `scripts/vptnav/submit_vpt1_v18_depth.sh`
+- `scripts/vptnav/submit_vpt2.sh`
+- `VPTnav_code/cube_game/agents.md`
+- `VPTnav_code/cube_game/MEMORY.md`
+- `VPTnav_code/cube_game/docs/`
+
+**Summary:**
+
+Separated active cube-game scripts into `scripts/a_star/` and
+`scripts/vptnav/`. Removed stale probe-era launchers (`test_models*.sh`,
+`old_test_models.sh`, `test_multiple.sh`, `compile_results.py`) plus generated
+probe/debug artifacts from the cube-game scripts folder. Updated job-array and
+root launch wrappers to point at the new agent paths.
+
+**Open questions:**
+
+- Whether to later archive or remove legacy SB3/SKRL scripts after confirming
+  they are no longer useful.
+
+**Next actions:**
+
+- Pull on Oscar before launching new VPTnav or A* jobs so the script paths match.

@@ -36,7 +36,7 @@ Do not assume this is final; recount before acting.
 
 ## Current Submit Config
 
-`VPTnav_code/cube_game/job_array/submit_a_star_array.sh` is configured for continuation:
+`VPTnav_code/cube_game/job_array/a_star/submit_a_star_array.sh` is configured for continuation:
 
 ```text
 NUM_GPUS=4
@@ -84,10 +84,10 @@ VPTnav_code/cube_game/docs/server_tree.md
 VPTnav_code/cube_game/source/cube_game/cube_game/tasks/direct/cube_game/vpt_env.py
 VPTnav_code/cube_game/source/cube_game/cube_game/tasks/direct/cube_game/vpt_env_v18_A_star.py
 VPTnav_code/cube_game/source/cube_game/cube_game/tasks/direct/cube_game/vpt_env_v18_camera_move.py
-VPTnav_code/cube_game/scripts/A_star_data_collector.py
-VPTnav_code/cube_game/scripts/keyboard_agent.py
-VPTnav_code/cube_game/job_array/submit_a_star_array.sh
-VPTnav_code/cube_game/job_array/submit_generation.sh
+VPTnav_code/cube_game/scripts/a_star/A_star_data_collector.py
+VPTnav_code/cube_game/scripts/vptnav/keyboard_agent.py
+VPTnav_code/cube_game/job_array/a_star/submit_a_star_array.sh
+VPTnav_code/cube_game/job_array/normal_vptnav/submit_generation.sh
 ```
 
 ## Camera-Move Pipeline
@@ -110,7 +110,7 @@ around the goal. Captures agent POV + camera-object POV at each angle, labels `Y
 - Runs via `submit_generation.sh` → `generation_worker.sh` (overlay-pool apptainer) →
   `multi_gpu.sh` → `launcher.py` → `keyboard_agent.py` (camera-move branch sends `action=5`).
 - Output: `{BASE_PATH}/data/data_node{NODE_ID}_gpu{G}/{RGB,Depth,Semantic,cam_Semantic,cam_RGB,cam_RGB_norm}/Mixed/env_{N}/` + `configs/env_{N}_config.json`.
-- Monitor: `scripts/monitor_camera_move.py`, `scripts/count_saved_envs.py`.
+- Monitor: `scripts/monitor_camera_move.py`, `scripts/vptnav/count_saved_envs.py`.
 
 Full handoff: `docs/camera_move_handoff.md`. Server sync checklist: `docs/server_sync_todo.md`.
 

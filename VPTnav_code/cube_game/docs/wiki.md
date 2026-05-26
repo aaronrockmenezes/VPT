@@ -98,7 +98,7 @@ VPT/
 | `source/.../vpt_env_v18_A_star.py` | A* variant. Should preserve v18 visual logic while using one valid VPT viewpoint as the A* start. |
 | `source/.../vpt_env_v18_camera_move.py` | Camera-move sweep variant (`VPT-v18-camera-move`). Fixed agent, camera sweeps a right-half arc around the goal. See `docs/camera_move_handoff.md`. |
 | `source/.../vpt_env_v17_alekh.py` | Reference only. Useful for older RL constraints and safe placement patterns, not visual truth. |
-| `scripts/A_star_data_collector.py` | Production collector. Spawns valid starts, uses cached A* plans, saves rollouts. |
+| `scripts/a_star/A_star_data_collector.py` | Production collector. Spawns valid starts, uses cached A* plans, saves rollouts. |
 | `job_array/a_star/submit_a_star_array.sh` | SLURM submit config for active A* collection. |
 | `scripts/compile_tasks.py` | Per-array-task validation, staging, and cleanup. |
 | `scripts/compile_a_star_dataset.py` | Final canonical dataset compiler. |

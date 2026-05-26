@@ -59,7 +59,7 @@ def main():
     args = p.parse_args()
 
     per_gpu = math.ceil(args.task_target / args.num_gpus)
-    script = "/mnt/VPT/VPTnav_code/cube_game/scripts/A_star_data_collector.py"
+    script = "/mnt/VPT/VPTnav_code/cube_game/scripts/a_star/A_star_data_collector.py"
 
     print(f"[LAUNCHER] task={args.task_id} gpus={args.num_gpus} "
           f"per_gpu_target={per_gpu} (task_target {args.task_target})")

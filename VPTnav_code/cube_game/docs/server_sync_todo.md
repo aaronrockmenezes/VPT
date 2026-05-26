@@ -39,7 +39,7 @@ Server repo root: `/users/arock3/data/arock3/VPT/VPTnav_code/cube_game`
       agent-FOV gate, batch-parallel collection (`_build_fixed_sweep_trajectory_batch`,
       `_save_slot_from_cache`, `_cached_frames`), label in filename, cam POV split into
       `cam_Semantic`/`cam_RGB`/`cam_RGB_norm`. NOTE: this file is untracked in git locally.
-- [ ] `scripts/keyboard_agent.py`
+- [ ] `scripts/vptnav/keyboard_agent.py`
       — added `camera_move_mode` branch: `"camera-move"` in task name → send `action=5`
       to all envs every step.
 - [ ] `job_array/normal_vptnav/launcher.py`
@@ -63,7 +63,7 @@ Server repo root: `/users/arock3/data/arock3/VPT/VPTnav_code/cube_game`
 
 - [ ] `scripts/monitor_camera_move.py`
       — Yes/No progress monitor: overall %, per-env avg, 50/50 feasibility, `--watch`.
-- [ ] `scripts/count_saved_envs.py`
+- [ ] `scripts/vptnav/count_saved_envs.py`
       — counts successfully saved envs per shard + total; `--verify` cross-checks images.
 - [ ] `docs/camera_move_handoff.md`
       — full camera-move pipeline handoff.
@@ -73,7 +73,7 @@ Server repo root: `/users/arock3/data/arock3/VPT/VPTnav_code/cube_game`
 ## Files NOT changed by camera-move work (do not attribute / do not touch)
 
 These showed as dirty in the local worktree but predate this work:
-`README.md`, `agents.md`, `scripts/A_star_data_collector.py`,
+`README.md`, `agents.md`, `scripts/a_star/A_star_data_collector.py`,
 `source/.../vpt_env.py`, `source/.../vpt_env_cfg.py`, `source/.../vpt_env_v18_A_star.py`.
 (README.md and agents.md WERE later updated to reference the camera-move pipeline — see
 their diffs; those edits are intentional.)

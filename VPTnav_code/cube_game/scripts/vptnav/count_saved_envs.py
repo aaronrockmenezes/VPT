@@ -15,8 +15,8 @@ Layout (multi-GPU/multi-node):
   {base}/data/data_node*_gpu*/RGB/Mixed/env_*/image_*d.png
 
 Usage:
-  python scripts/count_saved_envs.py --base_path /oscar/scratch/arock3/VPT_DATA_CAM_MOVE/v1
-  python scripts/count_saved_envs.py --base_path <p> --verify
+  python scripts/vptnav/count_saved_envs.py --base_path /oscar/scratch/arock3/VPT_DATA_CAM_MOVE/v1
+  python scripts/vptnav/count_saved_envs.py --base_path <p> --verify
 """
 
 import argparse
