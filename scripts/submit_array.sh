@@ -4,7 +4,7 @@
 #SBATCH --error=slurm_logs/%A_%a.err
 #SBATCH --account=carney-tserre-condo2
 #SBATCH --partition=gpu-he
-#SBATCH --constraint=h100
+#SBATCH --constraint=blackwell
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=2
@@ -78,7 +78,7 @@ cd "$PROJECT_ROOT" || { echo "FATAL [model=$MODEL_NAME]: Cannot cd to $PROJECT_R
 
 # Activate your env — uncomment/adjust:
 source $(conda info --base)/etc/profile.d/conda.sh
-conda activate vpt_env
+conda activate eval_env
 # module load cuda/12.x
 
 # Cache pretrained weights on scratch — download once, reuse everywhere

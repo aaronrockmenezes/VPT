@@ -4,7 +4,7 @@
 #SBATCH --error=slurm_logs/%A_ft_%a.err
 #SBATCH --account=carney-tserre-condo2
 #SBATCH --partition=gpu-he
-#SBATCH --constraint=h100
+#SBATCH --constraint=blackwell
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 
@@ -65,7 +65,7 @@ mkdir -p "$OUTPUT_DIR"
 cd "$PROJECT_ROOT" || { echo "FATAL [model=$MODEL_NAME]: Cannot cd to $PROJECT_ROOT"; exit 1; }
 
 source $(conda info --base)/etc/profile.d/conda.sh
-conda activate vpt_env
+conda activate eval_env
 
 export TORCH_HOME="/users/arock3/scratch/.cache/torch"
 export HF_HOME="/users/arock3/scratch/.cache/huggingface"
