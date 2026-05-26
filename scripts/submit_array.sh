@@ -87,6 +87,7 @@ export HF_HOME="/users/arock3/scratch/.cache/huggingface"
 mkdir -p "$TORCH_HOME" "$HF_HOME"
 
 export TQDM_DISABLE=1
+export PYTHONUNBUFFERED=1
 
 # =============================================================================
 # Run — single launch, python handles multi-run internally
@@ -96,8 +97,23 @@ mkdir -p "$LOG_DIR"
 LOG_FILE="${LOG_DIR}/${MODEL_NAME}.txt"
 
 echo "[model=$MODEL_NAME] Starting $NUM_RUNS runs"
+{
+    echo "============================================"
+    echo "Array Task ID: $TASK_ID"
+    echo "Task:      $TASK"
+    echo "Model:     $MODEL_NAME"
+    echo "Data:      $DATA_DIR"
+    echo "Output:    $OUTPUT_DIR"
+    echo "Label map: $LABEL_MAP"
+    echo "Runs:      $NUM_RUNS"
+    echo "Timeout:   ${LP_TASK_TIMEOUT:-50m}"
+    echo "GPU:       ${CUDA_VISIBLE_DEVICES:-unset}"
+    echo "Node:      $(hostname)"
+    echo "Start:     $(date)"
+    echo "============================================"
+} > "$LOG_FILE"
 
-accelerate launch \
+timeout "${LP_TASK_TIMEOUT:-50m}" accelerate launch \
     --num_processes=1 \
     --num_machines=1 \
     --mixed_precision=no \
@@ -110,12 +126,15 @@ accelerate launch \
     --label_map "$LABEL_MAP" \
     --output_dir "$OUTPUT_DIR" \
     --num_runs "$NUM_RUNS" \
-    --num_workers 2 \
-    > "$LOG_FILE" 2>&1
+    --num_workers "${LP_NUM_WORKERS:-2}" \
+    >> "$LOG_FILE" 2>&1
 
 EXIT_CODE=$?
 if [ $EXIT_CODE -ne 0 ]; then
     echo "FAILED [model=$MODEL_NAME] [task=$TASK] [config=$CONFIG_IDX] exited with code $EXIT_CODE" | tee -a "$LOG_FILE" >&2
+    if [ $EXIT_CODE -eq 124 ]; then
+        echo "TIMEOUT [model=$MODEL_NAME] exceeded ${LP_TASK_TIMEOUT:-50m}" | tee -a "$LOG_FILE" >&2
+    fi
 fi
 
 echo "[model=$MODEL_NAME] Finished at $(date)"

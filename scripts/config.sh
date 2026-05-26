@@ -31,6 +31,8 @@ output_dirs=(
 
 # Number of sequential repeats per model
 NUM_RUNS=3
+LP_NUM_WORKERS=2
+LP_TASK_TIMEOUT=50m
 
 # Max concurrent array tasks (8 GPUs/node × N nodes you want)
 MAX_CONCURRENT=40
