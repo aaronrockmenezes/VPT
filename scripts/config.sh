@@ -8,7 +8,7 @@ TASK="perspective"
 
 # Parallel arrays — data_dirs[i] pairs with output_dirs[i]
 data_dirs=(
-    "/users/arock3/scratch/VPT_DATA_A_STAR/v18_vpt1_probe_1024_firstframe_v2"
+    "/users/arock3/scratch/THESIS/VPT_1_v18"
     # "/users/arock3/scratch/VPT1_v18_v3_finer"
     # "/users/arock3/scratch/VPT1_depth_v18_B"
     # "/users/arock3/scratch/VPT2_v4"
@@ -19,7 +19,7 @@ data_dirs=(
 )
 
 output_dirs=(
-    "/users/arock3/scratch/VPT_logs/perspective_astar/v18_vpt1_probe_1024_firstframe_v2/lp_logs"
+    "/users/arock3/scratch/VPT_logs/thesis/VPT_1_v18/lp_logs"
     # "/users/arock3/scratch/VPT_logs/perspective_new/v18_v3_finer/lp_logs"
     # "/users/arock3/scratch/VPT_logs/depth_new/v18_depth_B/lp_logs"
     # "/users/arock3/scratch/VPT_logs/vpt2/v4/lp_logs"

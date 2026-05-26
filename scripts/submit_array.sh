@@ -4,11 +4,11 @@
 #SBATCH --error=slurm_logs/%A_%a.err
 #SBATCH --account=carney-tserre-condo2
 #SBATCH --partition=gpu-he
-#SBATCH --constraint=h100|a6000
+#SBATCH --constraint=blackwell
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=48G
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=30G
 #SBATCH --gres=gpu:1
 #SBATCH --time=01:00:00
 
