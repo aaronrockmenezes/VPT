@@ -47,6 +47,7 @@ DIR_PATTERN = r"^data_node(?:\d+|\d+_\d+)_gpu\d+$"
 
 OUTPUT_DIR = os.getenv("VPT1_OUTPUT_DIR", "/users/arock3/scratch/THESIS/VPT_1_v18")
 EXPECTED_IMAGES_PER_ENV = 10
+REQUIRED_CAM_FILES = ("cam_pov.png",)
 
 M            = 2 ** 3
 TRAIN_COUNT  = 32 * M
@@ -316,12 +317,13 @@ def validate_folder(base: Path, json_data: dict, scope: str = "root") -> None:
                 (base / FOLDERS["rgb"]      / label / f"env_{idx}", EXPECTED_IMAGES_PER_ENV),
                 (base / FOLDERS["depth"]    / label / f"env_{idx}", EXPECTED_IMAGES_PER_ENV),
                 (base / FOLDERS["semantic"] / label / f"env_{idx}", EXPECTED_IMAGES_PER_ENV),
-                (base / FOLDERS["cam"]      / label / f"env_{idx}", 1),
             ]
+            cam_path = base / FOLDERS["cam"] / label / f"env_{idx}"
         else:
             checks = [
                 (base / scope / label / f"env_{idx}", EXPECTED_IMAGES_PER_ENV),
             ]
+            cam_path = None
 
         for path, expected in checks:
             if not path.exists():
@@ -333,6 +335,14 @@ def validate_folder(base: Path, json_data: dict, scope: str = "root") -> None:
             )
             if count != expected:
                 errors.append(f"Count mismatch: {path} ({count} ≠ {expected})")
+
+        if cam_path is not None:
+            if not cam_path.exists():
+                errors.append(f"Missing: {cam_path}")
+            else:
+                for fname in REQUIRED_CAM_FILES:
+                    if not (cam_path / fname).exists():
+                        errors.append(f"Missing required cam file: {cam_path / fname}")
 
     if not errors:
         print(f"  ✅ {scope} OK")

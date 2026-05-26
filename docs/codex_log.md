@@ -575,3 +575,30 @@ files, old parallel envs, and inactive simulate/train helpers into
 
 - Pull on Oscar before new generation jobs so active task registration matches
   the cleaned direct-task layout.
+
+## 2026-05-26 (4)
+
+**Task:** Fix VPT1 builder validation for multi-file cam folders.
+
+**Files changed:**
+
+- `scripts/utils/build_vpt1_dataset.py`
+- `docs/codex_log.md`
+
+**Summary:**
+
+The VPT1 builder copied full `cam/env_*` directories correctly, but root
+validation still expected exactly one cam image per env. Active v18 writes
+`cam_pov.png` plus RGB/normalized camera views, so successful 512-env builds
+printed 512 false validation errors. Updated validation to require
+`cam_pov.png` by name and allow additional cam artifacts.
+
+**Open questions:**
+
+- Whether to apply the same named cam-file validation rule to older VPT2/depth
+  merge utilities if they are reused.
+
+**Next actions:**
+
+- Pull on Oscar and rerun `scripts/vptnav/build_vpt1.sh`; existing compiled
+  output is balanced, but rerunning removes the false root validation errors.
