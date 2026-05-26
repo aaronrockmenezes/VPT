@@ -34,7 +34,7 @@ Server repo root: `/users/arock3/data/arock3/VPT/VPTnav_code/cube_game`
 
 - [ ] `source/cube_game/cube_game/tasks/direct/cube_game/__init__.py`
       — registered gym id `VPT-v18-camera-move`.
-- [ ] `source/cube_game/cube_game/tasks/direct/cube_game/vpt_env_v18_camera_move.py`
+- [ ] `source/cube_game/cube_game/tasks/direct/cube_game/vpt_env_v18_camera.py`
       — the camera-move env (large). 180° sweep, sweep measured from goal→agent direction,
       agent-FOV gate, batch-parallel collection (`_build_fixed_sweep_trajectory_batch`,
       `_save_slot_from_cache`, `_cached_frames`), label in filename, cam POV split into
@@ -74,7 +74,7 @@ Server repo root: `/users/arock3/data/arock3/VPT/VPTnav_code/cube_game`
 
 These showed as dirty in the local worktree but predate this work:
 `README.md`, `agents.md`, `scripts/a_star/A_star_data_collector.py`,
-`source/.../vpt_env.py`, `source/.../vpt_env_cfg.py`, `source/.../vpt_env_v18_A_star.py`.
+`source/.../vpt_env_v18.py`, `source/.../legacy/vpt_env_cfg.py`, `source/.../vpt_env_v18_A_star.py`.
 (README.md and agents.md WERE later updated to reference the camera-move pipeline — see
 their diffs; those edits are intentional.)
 

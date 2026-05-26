@@ -19,7 +19,7 @@ The early A* dataset used the initial reset pose or random near-camera spawn, wh
 
 The corrected A* start logic:
 
-- Uses `vpt_env.py` as the visual source of truth.
+- Uses `vpt_env_v18.py` as the visual source of truth.
 - Runs the VPT valid-viewpoint pipeline for A* starts.
 - Requires at least one valid viewpoint.
 - Tests all valid candidates for A* viability.
@@ -28,7 +28,7 @@ The corrected A* start logic:
 
 ## Visual Logic To Preserve
 
-From `vpt_env.py` / v18:
+From `vpt_env_v18.py` / v18:
 
 - Camera and goal spawn/randomization distribution.
 - Obstacle randomization/material/color/light setup.

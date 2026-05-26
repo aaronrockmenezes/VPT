@@ -24,19 +24,20 @@ Primary server paths used in active work:
 /users/arock3/data/arock3/VPT/
 ├── VPTnav_code/cube_game/
 │   ├── source/cube_game/cube_game/tasks/direct/cube_game/
-│   │   ├── vpt_env.py
+│   │   ├── vpt_env_v18.py
 │   │   ├── vpt_env_v18_A_star.py
-│   │   └── vpt_env_v17_alekh.py
+│   │   ├── vpt_env_v18_depth.py
+│   │   ├── vpt_env_v18_camera.py
+│   │   ├── vpt_env_v18_cam_optim.py
+│   │   ├── vpt_env_v18_A_star_strategy.py
+│   │   ├── vpt2_env_v*.py
+│   │   └── legacy/
 │   ├── scripts/
-│   │   ├── A_star_data_collector.py
-│   │   ├── compile_a_star_dataset.py
-│   │   ├── compile_a_star_webdataset.py
-│   │   ├── compile_all_nodes.py
-│   │   ├── compile_tasks.py
-│   │   ├── count_successful_envs.py
-│   │   ├── sanity_check_compiled_a_star.py
-│   │   ├── audit_cam_deadzone.py
-│   │   └── carve_astar_vpt1_firstframe_probe.py
+│   │   ├── a_star/
+│   │   │   └── A_star_data_collector.py
+│   │   └── vptnav/
+│   │       ├── keyboard_agent.py
+│   │       └── vpt2_keyboard_agent.py
 │   └── job_array/
 │       ├── a_star/
 │       │   ├── submit_a_star_array.sh
@@ -94,10 +95,10 @@ VPT/
 
 | File | Role |
 |---|---|
-| `source/.../vpt_env.py` | V18 visual/data-generation truth. Contains camera/goal/object randomization, viewpoint generation, yaw jitter, camera-object orientation/sensor correction assumptions. |
+| `source/.../vpt_env_v18.py` | V18 visual/data-generation truth. Contains camera/goal/object randomization, viewpoint generation, yaw jitter, camera-object orientation/sensor correction assumptions. |
 | `source/.../vpt_env_v18_A_star.py` | A* variant. Should preserve v18 visual logic while using one valid VPT viewpoint as the A* start. |
-| `source/.../vpt_env_v18_camera_move.py` | Camera-move sweep variant (`VPT-v18-camera-move`). Fixed agent, camera sweeps a right-half arc around the goal. See `docs/camera_move_handoff.md`. |
-| `source/.../vpt_env_v17_alekh.py` | Reference only. Useful for older RL constraints and safe placement patterns, not visual truth. |
+| `source/.../vpt_env_v18_camera.py` | Camera-move sweep variant (`VPT-v18-camera-move`). Fixed agent, camera sweeps a right-half arc around the goal. See `docs/camera_move_handoff.md`. |
+| `source/.../legacy/vpt_env_v17_alekh.py` | Reference only. Useful for older RL constraints and safe placement patterns, not visual truth. |
 | `scripts/a_star/A_star_data_collector.py` | Production collector. Spawns valid starts, uses cached A* plans, saves rollouts. |
 | `job_array/a_star/submit_a_star_array.sh` | SLURM submit config for active A* collection. |
 | `scripts/compile_tasks.py` | Per-array-task validation, staging, and cleanup. |

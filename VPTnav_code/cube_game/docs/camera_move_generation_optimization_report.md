@@ -20,7 +20,7 @@ tensor geometry before sim/image checks.
 
 Primary file:
 
-- `source/cube_game/cube_game/tasks/direct/cube_game/vpt_env_v18_camera_move.py`
+- `source/cube_game/cube_game/tasks/direct/cube_game/vpt_env_v18_camera.py`
 
 Key functions:
 

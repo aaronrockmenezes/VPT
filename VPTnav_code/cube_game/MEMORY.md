@@ -63,8 +63,8 @@ Never submit continuation jobs with `RESET_BASE_PATH=1`.
 
 ## A* Correctness Requirements
 
-- Preserve v18 visual logic from `vpt_env.py`.
-- Use `vpt_env_v17_alekh.py` only as reference for RL-style valid-start constraints.
+- Preserve v18 visual logic from `vpt_env_v18.py`.
+- Use `legacy/vpt_env_v17_alekh.py` only as reference for RL-style valid-start constraints.
 - Start A* from a verified valid viewpoint, not the initial reset pose.
 - First saved agent frame must see goal and camera object.
 - Start must satisfy camera-centered `12x12 m` square with `3x3 m` deadzone rejection.
@@ -81,9 +81,9 @@ VPTnav_code/cube_game/docs/server_sync_todo.md
 VPTnav_code/cube_game/docs/world_model_handoff.md
 VPTnav_code/cube_game/docs/commands.md
 VPTnav_code/cube_game/docs/server_tree.md
-VPTnav_code/cube_game/source/cube_game/cube_game/tasks/direct/cube_game/vpt_env.py
+VPTnav_code/cube_game/source/cube_game/cube_game/tasks/direct/cube_game/vpt_env_v18.py
 VPTnav_code/cube_game/source/cube_game/cube_game/tasks/direct/cube_game/vpt_env_v18_A_star.py
-VPTnav_code/cube_game/source/cube_game/cube_game/tasks/direct/cube_game/vpt_env_v18_camera_move.py
+VPTnav_code/cube_game/source/cube_game/cube_game/tasks/direct/cube_game/vpt_env_v18_camera.py
 VPTnav_code/cube_game/scripts/a_star/A_star_data_collector.py
 VPTnav_code/cube_game/scripts/vptnav/keyboard_agent.py
 VPTnav_code/cube_game/job_array/a_star/submit_a_star_array.sh

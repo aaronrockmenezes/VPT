@@ -37,10 +37,10 @@ All durable state should be written to markdown in this repo. A new chat should 
 
 | File | Use |
 |---|---|
-| `source/cube_game/cube_game/tasks/direct/cube_game/vpt_env.py` | V18 visual source of truth. |
+| `source/cube_game/cube_game/tasks/direct/cube_game/vpt_env_v18.py` | V18 visual source of truth. |
 | `source/cube_game/cube_game/tasks/direct/cube_game/vpt_env_v18_A_star.py` | A* rollout environment. Must use v18 visuals plus valid-viewpoint starts. |
-| `source/cube_game/cube_game/tasks/direct/cube_game/vpt_env_v18_camera_move.py` | Camera-move sweep environment (`VPT-v18-camera-move`). Fixed agent, camera sweeps a right-half arc around the goal. See `docs/camera_move_handoff.md`. |
-| `source/cube_game/cube_game/tasks/direct/cube_game/vpt_env_v17_alekh.py` | Historical/reference env. Use only for RL constraint ideas, not visual distribution. |
+| `source/cube_game/cube_game/tasks/direct/cube_game/vpt_env_v18_camera.py` | Camera-move sweep environment (`VPT-v18-camera-move`). Fixed agent, camera sweeps a right-half arc around the goal. See `docs/camera_move_handoff.md`. |
+| `source/cube_game/cube_game/tasks/direct/cube_game/legacy/vpt_env_v17_alekh.py` | Historical/reference env. Use only for RL constraint ideas, not visual distribution. |
 
 ## Main Scripts
 

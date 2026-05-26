@@ -76,7 +76,7 @@ launcher.py                           # spawns NUM_GPUS subprocesses, one per GP
    ▼
 keyboard_agent.py                     # camera-move branch: sends action=5 to all envs every step
    ▼
-vpt_env_v18_camera_move.py            # action=5 → soft reset → _reset_idx(rl_reset=False) → collection
+vpt_env_v18_camera.py            # action=5 → soft reset → _reset_idx(rl_reset=False) → collection
 ```
 
 `keyboard_agent.py` auto-detects the task: if `"camera-move"` is in the task name it skips
@@ -149,7 +149,7 @@ python scripts/vptnav/count_saved_envs.py --base_path <BASE_PATH> --verify      
 
 | File | Role |
 |---|---|
-| `source/.../tasks/direct/cube_game/vpt_env_v18_camera_move.py` | The camera-move env. All collection logic lives here. |
+| `source/.../tasks/direct/cube_game/vpt_env_v18_camera.py` | The camera-move env. All collection logic lives here. |
 | `source/.../tasks/direct/cube_game/__init__.py` | Registers gym id `VPT-v18-camera-move`. |
 | `scripts/vptnav/keyboard_agent.py` | Driver — camera-move branch sends `action=5` every step. |
 | `job_array/normal_vptnav/submit_generation.sh` | SLURM submit — edit the config block to launch. |

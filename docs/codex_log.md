@@ -148,7 +148,7 @@ includes envs that pass the RGB image-count check.
 
 **Files changed:**
 
-- `VPTnav_code/cube_game/source/cube_game/cube_game/tasks/direct/cube_game/vpt_env_v18_camera_move.py`
+- `VPTnav_code/cube_game/source/cube_game/cube_game/tasks/direct/cube_game/vpt_env_v18_camera.py`
 - `VPTnav_code/cube_game/docs/camera_move_handoff.md`
 - `docs/codex_log.md`
 
@@ -544,3 +544,34 @@ root launch wrappers to point at the new agent paths.
 **Next actions:**
 
 - Pull on Oscar before launching new VPTnav or A* jobs so the script paths match.
+
+## 2026-05-26 (3)
+
+**Task:** Archive inactive direct-task env modules.
+
+**Files changed:**
+
+- `VPTnav_code/cube_game/source/cube_game/cube_game/tasks/direct/cube_game/__init__.py`
+- `VPTnav_code/cube_game/source/cube_game/cube_game/tasks/direct/cube_game/legacy/`
+- `VPTnav_code/cube_game/agents.md`
+- `VPTnav_code/cube_game/MEMORY.md`
+- `VPTnav_code/cube_game/docs/`
+- `docs/codex_log.md`
+
+**Summary:**
+
+Trimmed cube-game task registration to the active task set: template cube game,
+normal `VPT-v18`, `VPT-v18-Depth`, VPT2 v1-v4, A* v18, A* strategy, and v18
+camera/camera-optim tasks. Moved old VPT env/config variants, copy-suffixed
+files, old parallel envs, and inactive simulate/train helpers into
+`legacy/`. Kept active utility/import support in place.
+
+**Open questions:**
+
+- Whether to eventually delete the legacy folder after thesis runs and docs are
+  stable.
+
+**Next actions:**
+
+- Pull on Oscar before new generation jobs so active task registration matches
+  the cleaned direct-task layout.
