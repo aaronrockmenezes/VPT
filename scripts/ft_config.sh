@@ -8,11 +8,11 @@ TASK="perspective"
 
 # Parallel arrays - data_dirs[i] pairs with output_dirs[i].
 data_dirs=(
-    "/users/arock3/scratch/THESIS/VPT_1_v18"
+    "/users/arock3/scratch/THESIS/VPT_1_v18_tmp_count"
 )
 
 output_dirs=(
-    "/users/arock3/scratch/VPT_logs/thesis/VPT_1_v18/ft_logs"
+    "/users/arock3/scratch/VPT_logs/thesis/VPT_1_v18_tmp_count/ft_logs"
 )
 
 # Fine-tuning is heavier than LP; keep model list explicit.

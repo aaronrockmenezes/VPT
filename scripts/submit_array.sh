@@ -99,6 +99,9 @@ echo "[model=$MODEL_NAME] Starting $NUM_RUNS runs"
 
 accelerate launch \
     --num_processes=1 \
+    --num_machines=1 \
+    --mixed_precision=no \
+    --dynamo_backend=no \
     --main_process_port $(( 29500 + TASK_ID % 1000 )) \
     "$PYTHON_SCRIPT" \
     --task "$TASK" \

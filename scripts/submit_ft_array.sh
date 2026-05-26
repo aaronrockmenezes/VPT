@@ -79,6 +79,9 @@ LOG_FILE="${LOG_DIR}/${MODEL_NAME}.txt"
 
 accelerate launch \
     --num_processes="${FT_GPUS_PER_TASK}" \
+    --num_machines=1 \
+    --mixed_precision=no \
+    --dynamo_backend=no \
     --main_process_port $(( 30500 + TASK_ID % 1000 )) \
     "$PYTHON_SCRIPT" \
     --task "$TASK" \

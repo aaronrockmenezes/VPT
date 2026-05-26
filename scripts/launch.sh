@@ -23,6 +23,30 @@ if [ "$NUM_CONFIGS" -ne "${#output_dirs[@]}" ]; then
     exit 1
 fi
 
+for data_dir in "${data_dirs[@]}"; do
+    case "$TASK" in
+        depth)
+            train_split="train_depth"
+            test_split="test_depth"
+            ;;
+        perspective|vpt2)
+            train_split="train"
+            test_split="test"
+            ;;
+        *)
+            echo "ERROR: unknown TASK '$TASK'"
+            exit 1
+            ;;
+    esac
+
+    if [ ! -d "${data_dir}/${train_split}" ] || [ ! -d "${data_dir}/${test_split}" ]; then
+        echo "ERROR: dataset split missing for ${data_dir}"
+        echo "  expected: ${data_dir}/${train_split}"
+        echo "  expected: ${data_dir}/${test_split}"
+        exit 1
+    fi
+done
+
 TOTAL_TASKS=$(( NUM_CONFIGS * NUM_MODELS ))
 MAX_IDX=$(( TOTAL_TASKS - 1 ))
 
