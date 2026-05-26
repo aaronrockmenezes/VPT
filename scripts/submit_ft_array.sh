@@ -4,7 +4,7 @@
 #SBATCH --error=slurm_logs/%A_ft_%a.err
 #SBATCH --account=carney-tserre-condo2
 #SBATCH --partition=gpu-he
-#SBATCH --constraint=blackwell
+#SBATCH --constraint=h100
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 

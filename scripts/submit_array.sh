@@ -4,7 +4,7 @@
 #SBATCH --error=slurm_logs/%A_%a.err
 #SBATCH --account=carney-tserre-condo2
 #SBATCH --partition=gpu-he
-#SBATCH --constraint=blackwell
+#SBATCH --constraint=h100
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=2
@@ -110,6 +110,7 @@ accelerate launch \
     --label_map "$LABEL_MAP" \
     --output_dir "$OUTPUT_DIR" \
     --num_runs "$NUM_RUNS" \
+    --num_workers 2 \
     > "$LOG_FILE" 2>&1
 
 EXIT_CODE=$?
