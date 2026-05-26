@@ -39,10 +39,13 @@ from tqdm import tqdm
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 
-BASE_DIR = "/users/arock3/scratch/VPT1_DATA/thesis/v18_vpt_1/data"
+BASE_DIR = os.getenv(
+    "VPT1_BASE_DIR",
+    "/users/arock3/scratch/VPT1_DATA/thesis/v18_vpt_1/data",
+)
 DIR_PATTERN = r"^data_node(?:\d+|\d+_\d+)_gpu\d+$"
 
-OUTPUT_DIR = "/users/arock3/scratch/THESIS/VPT_1_v18"
+OUTPUT_DIR = os.getenv("VPT1_OUTPUT_DIR", "/users/arock3/scratch/THESIS/VPT_1_v18")
 EXPECTED_IMAGES_PER_ENV = 10
 
 M            = 2 ** 3
