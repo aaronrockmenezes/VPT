@@ -699,3 +699,33 @@ the worker script.
 **Next actions:**
 
 - Pull on Oscar before using the override-based launch commands.
+
+## 2026-05-27 (4)
+
+**Task:** Record active Oscar LP/FT/VPT2 jobs and next thesis run order.
+
+**Files changed:**
+
+- `VPTnav_code/cube_game/MEMORY.md`
+- `docs/project_todo.md`
+- `docs/codex_log.md`
+
+**Summary:**
+
+Captured the current Oscar queue snapshot from `squeue -u arock3`: VPT1 depth
+LP array `2873958_[0-499%40]` is running the first 40 tasks with compile job
+`2873959` pending; VPT1 depth FT array `2874004_[0-499%10]` and compile job
+`2874005` are submitted but pending on `QOSMaxMemoryPerUser`; VPT2-v4
+generation array `2874008_[0-29]` is also pending on `QOSMaxMemoryPerUser`.
+Recorded the next thesis order: analyze VPT1 depth, build VPT2, run/analyze
+VPT2 LP+FT, then generate/build/analyze VPT1 Strategy.
+
+**Open questions:**
+
+- Whether to let LP consume the memory cap until slots finish or reduce active
+  LP concurrency so FT/VPT2 generation can begin sooner.
+
+**Next actions:**
+
+- Re-check `squeue -u arock3` and result counts before canceling or relaunching
+  anything.

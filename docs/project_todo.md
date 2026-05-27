@@ -7,6 +7,21 @@ explicitly requested.
 
 ## High Priority
 
+- [ ] Analyze VPT1 depth LP/FT after active Oscar jobs finish.
+      Active snapshot from 2026-05-27: LP array `2873958_[0-499%40]`
+      running first 40 tasks with compile job `2873959` pending; FT array
+      `2874004_[0-499%10]` and compile job `2874005` submitted but pending
+      on `QOSMaxMemoryPerUser`.
+
+- [ ] Build VPT2 dataset after active generation finishes.
+      Active snapshot from 2026-05-27: VPT2-v4 generation array
+      `2874008_[0-29]` submitted for 30 nodes but pending on
+      `QOSMaxMemoryPerUser`.
+
+- [ ] Run LP + FT for VPT2, then analyze and add ImageNet comparison plots.
+
+- [ ] Generate VPT1 Strategy, build the dataset, then run LP + FT and analyze.
+
 - [ ] Migrate Oscar server tree to the canonical GitHub-backed repo.
       See `VPTnav_code/cube_game/docs/server_sync_todo.md`.
 

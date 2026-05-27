@@ -4,9 +4,45 @@ This file is durable cross-chat memory. New Codex chats should read this before 
 
 ## Current Priority
 
-Continue A* dataset generation and prepare world-model training data. The A* dataset must start from a verified VPT-valid first-person viewpoint where frame 0 sees both goal and camera object.
+Thesis VPTnav pipeline is active. Immediate order:
 
-Secondary active pipeline: `VPT-v18-camera-move` sweep collection (see `## Camera-Move Pipeline` below and `docs/camera_move_handoff.md`).
+1. Analyze VPT1 depth LP/FT after jobs finish.
+2. Build VPT2 dataset after generation finishes.
+3. Launch LP + FT for VPT2, then analyze results.
+4. Generate VPT1 Strategy.
+5. Build VPT1 Strategy dataset, then launch LP + FT and analyze results.
+
+A* and camera-move remain important but are not the current foreground run.
+The A* dataset must start from a verified VPT-valid first-person viewpoint
+where frame 0 sees both goal and camera object.
+
+Secondary paused pipeline: `VPT-v18-camera-move` sweep collection (see
+`## Camera-Move Pipeline` below and `docs/camera_move_handoff.md`).
+
+## Active Oscar Jobs Snapshot
+
+Snapshot from `squeue -u arock3` on 2026-05-27 while on `node2340`.
+Re-check before acting.
+
+```text
+2873958_[0-499%40]  lp-array     VPT1 depth LP array
+2873958_0..39       lp-array     RUNNING, first 40 array tasks
+2873958_[40-499]    lp-array     PENDING, JobArrayTaskLimit
+2873959             lp-compile   PENDING, Dependency on 2873958
+
+2874004_[0-499%10]  ft-array     VPT1 depth FT array, PENDING QOSMaxMemoryPerUser
+2874005             ft-compile   PENDING, Dependency on 2874004
+
+2874008_[0-29]      generation   VPT2-v4 generation, PENDING QOSMaxMemoryPerUser
+
+2839342             sys/dash     RUNNING on node2340
+2854855             interactive  RUNNING on gpu3210
+```
+
+Operational note: `QOSMaxMemoryPerUser` on FT/VPT2 likely means the active LP
+array's memory reservations are consuming the user memory cap. Let LP slots
+finish, reduce/cancel competing jobs, or relaunch with lower concurrency if
+VPT2/FT must start immediately.
 
 ## Server Sync — PENDING
 
