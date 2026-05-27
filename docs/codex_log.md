@@ -602,3 +602,100 @@ printed 512 false validation errors. Updated validation to require
 
 - Pull on Oscar and rerun `scripts/vptnav/build_vpt1.sh`; existing compiled
   output is balanced, but rerunning removes the false root validation errors.
+
+## 2026-05-27
+
+**Task:** Capture and analyze VPT1 v18 LP/FT result tables.
+
+**Files changed:**
+
+- `docs/results/vpt1_v18/vpt1_v18_linear_probe_results.csv`
+- `docs/results/vpt1_v18/vpt1_v18_finetune_results.csv`
+- `docs/results/vpt1_v18/vpt1_v18_lp_vs_ft_comparison.csv`
+- `docs/results/vpt1_v18/vpt1_v18_lp_ft_imagenet_matched.csv`
+- `docs/results/vpt1_v18/vpt1_v18_lp_ft_vs_imagenet.html`
+- `docs/results/vpt1_v18/vpt1_v18_lp_ft_analysis.md`
+- `scripts/analyze_lp_ft_results.py`
+- `scripts/plot_lp_ft_vs_imagenet.py`
+- `docs/project_todo.md`
+- `docs/codex_log.md`
+
+**Summary:**
+
+Recovered the pasted VPT1 v18 linear-probe and fine-tune compiled result
+tables from the local Codex session log, normalized them into CSVs, and added a
+small comparison script. The FT table averages 57.294% versus LP at 55.209%.
+Across 493 shared models, FT improves by +2.105 percentage points on average
+and beats LP for 379/493 models, but LP/FT rank correlation is weak. The
+fine-tune result should be treated as model-search/debug evidence because the
+current FT script selects the best epoch on test accuracy. Added a Plotly
+scatter comparing LP and FT accuracy against ImageNet top-1 for 466 matched
+models; both correlations are moderate and similar (LP r=0.429, FT r=0.427).
+Added the remaining LP/FT cleanup work to `docs/project_todo.md`.
+
+**Open questions:**
+
+- Whether to rerun FT with a train/val/test protocol before using the table in
+  thesis-facing claims.
+
+**Next actions:**
+
+- Add a clean FT mode that selects checkpoints on validation accuracy and only
+  reports held-out test once.
+
+## 2026-05-27 (2)
+
+**Task:** Cap SLURM memory defaults at 40G.
+
+**Files changed:**
+
+- `VPTnav_code/cube_game/job_array/normal_vptnav/generation_worker.sh`
+- `VPTnav_code/cube_game/job_array/a_star/submit_a_star_array.sh`
+- `VPTnav_code/cube_game/job_array/a_star/submit_a_star.sh`
+- `scripts/ft_config.sh`
+- `docs/codex_log.md`
+
+**Summary:**
+
+Set the normal VPTnav generation worker, A* submit wrappers, and FT launcher
+defaults to request `40G` node memory. LP and compile jobs were already below
+that cap (`30G` and `4G` respectively), so they were left unchanged.
+
+**Open questions:**
+
+- Whether any future large FT/A* jobs need an explicit one-off override after
+  validating the 40G cap.
+
+**Next actions:**
+
+- Pull on Oscar before submitting new jobs so the memory cap is active there.
+
+## 2026-05-27 (3)
+
+**Task:** Add one-shot launch overrides for depth LP/FT and VPT2 time.
+
+**Files changed:**
+
+- `scripts/config.sh`
+- `scripts/ft_config.sh`
+- `scripts/vptnav/submit_vpt2.sh`
+- `docs/codex_log.md`
+
+**Summary:**
+
+Added shell override support for single-dataset LP/FT launches:
+`LP_TASK`, `LP_DATA_DIR`, `LP_OUTPUT_DIR`, `LP_MAX_CONCURRENT`,
+`FT_TASK`, `FT_DATA_DIR`, `FT_OUTPUT_DIR`, `FT_MEM_OVERRIDE`, and
+`FT_MAX_CONCURRENT_OVERRIDE`. Set the FT default memory request to `80G` while
+keeping the existing 4 GPU / 8 CPU task shape. Added `TIME_LIMIT` support to
+the VPT2 generation wrapper so VPT2 jobs can request 4h without hand-editing
+the worker script.
+
+**Open questions:**
+
+- Whether VPT2 generation should eventually get its own default time above 1h
+  after the current thesis run.
+
+**Next actions:**
+
+- Pull on Oscar before using the override-based launch commands.

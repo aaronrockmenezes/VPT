@@ -5,7 +5,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=3
-#SBATCH --mem=50G
+#SBATCH --mem=40G
 #SBATCH --time=01:00:00
 # ============================================================
 #  Per-node SLURM worker for generation / camera-move collection.

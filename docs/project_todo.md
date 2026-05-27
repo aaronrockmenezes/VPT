@@ -14,6 +14,13 @@ explicitly requested.
       Goal: make a private, local repo wiki plus FAQ that a new agent or Aaron
       can use without reconstructing history from chats.
 
+- [ ] LP/FT thesis-reporting leftovers.
+      Current VPT1 v18 LP/FT results look promising, but before treating them
+      as final thesis evidence: add a train/val/test FT mode, select FT
+      checkpoints by validation accuracy instead of test accuracy, rerun the
+      clean FT sweep or a focused model subset, document stalled/timeout LP
+      models, and fold the ImageNet-correlation plot into the results notes.
+
 ## Documentation Cleanup Scope
 
 - [x] Separate and clearly name the active pipelines:

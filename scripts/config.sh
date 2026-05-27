@@ -36,3 +36,14 @@ LP_TASK_TIMEOUT=50m
 
 # Max concurrent array tasks (8 GPUs/node × N nodes you want)
 MAX_CONCURRENT=40
+
+# One-shot overrides for launch commands. These avoid editing this file when
+# launching a single dataset from the shell.
+TASK="${LP_TASK:-$TASK}"
+if [ -n "${LP_DATA_DIR:-}" ]; then
+    data_dirs=("${LP_DATA_DIR}")
+fi
+if [ -n "${LP_OUTPUT_DIR:-}" ]; then
+    output_dirs=("${LP_OUTPUT_DIR}")
+fi
+MAX_CONCURRENT="${LP_MAX_CONCURRENT:-$MAX_CONCURRENT}"

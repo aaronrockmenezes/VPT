@@ -90,7 +90,7 @@ JOB_ID=$(sbatch --array=0-${MAX_IDX}%${FT_MAX_CONCURRENT} \
     --cpus-per-task=${FT_CPUS_PER_TASK} \
     --mem=${FT_MEM} \
     --time=${FT_TIME} \
-    --export=ALL \
+    --export=ALL,FT_SCRIPT_DIR="${SCRIPT_DIR}",FT_TASK="${FT_TASK:-}",FT_DATA_DIR="${FT_DATA_DIR:-}",FT_OUTPUT_DIR="${FT_OUTPUT_DIR:-}",FT_MEM_OVERRIDE="${FT_MEM_OVERRIDE:-}",FT_MAX_CONCURRENT_OVERRIDE="${FT_MAX_CONCURRENT_OVERRIDE:-}" \
     --parsable \
     "${SCRIPT_DIR}/submit_ft_array.sh")
 

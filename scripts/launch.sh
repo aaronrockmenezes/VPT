@@ -77,7 +77,7 @@ mkdir -p "${SCRIPT_DIR}/slurm_logs"
 export LP_SCRIPT_DIR="$SCRIPT_DIR"
 
 JOB_ID=$(sbatch --array=0-${MAX_IDX}%${MAX_CONCURRENT} \
-    --export=ALL \
+    --export=ALL,LP_SCRIPT_DIR="${SCRIPT_DIR}",LP_TASK="${LP_TASK:-}",LP_DATA_DIR="${LP_DATA_DIR:-}",LP_OUTPUT_DIR="${LP_OUTPUT_DIR:-}",LP_MAX_CONCURRENT="${LP_MAX_CONCURRENT:-}" \
     --parsable \
     "${SCRIPT_DIR}/submit_array.sh")
 

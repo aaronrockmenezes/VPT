@@ -25,7 +25,7 @@ ACCOUNT="carney-tserre-condo2"
 CONSTRAINT="blackwell"
 PARTITION="gpu-he"
 CPUS_PER_TASK=75                        # per node total
-MEM="400g"                              # per node total
+MEM="40G"                               # per node total
 TIME="24:00:00"
 # ─────────────────────────────────────────────────────────────
 

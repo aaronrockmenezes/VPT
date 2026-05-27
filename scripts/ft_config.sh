@@ -29,6 +29,18 @@ FT_NUM_WORKERS=2
 # Resource policy: 2 CPU cores per GPU.
 FT_GPUS_PER_TASK=4
 FT_CPUS_PER_GPU=2
-FT_MEM="120G"
+FT_MEM="80G"
 FT_TIME="03:00:00"
 FT_MAX_CONCURRENT=10
+
+# One-shot overrides for launch commands. These avoid editing this file when
+# launching a single dataset from the shell.
+TASK="${FT_TASK:-$TASK}"
+if [ -n "${FT_DATA_DIR:-}" ]; then
+    data_dirs=("${FT_DATA_DIR}")
+fi
+if [ -n "${FT_OUTPUT_DIR:-}" ]; then
+    output_dirs=("${FT_OUTPUT_DIR}")
+fi
+FT_MEM="${FT_MEM_OVERRIDE:-$FT_MEM}"
+FT_MAX_CONCURRENT="${FT_MAX_CONCURRENT_OVERRIDE:-$FT_MAX_CONCURRENT}"
