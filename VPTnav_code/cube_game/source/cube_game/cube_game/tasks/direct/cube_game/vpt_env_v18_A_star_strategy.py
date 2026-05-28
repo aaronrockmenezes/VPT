@@ -23,7 +23,7 @@ from isaaclab.sensors import TiledCamera
 from isaaclab.sim.spawners.from_files import GroundPlaneCfg, spawn_ground_plane
 from isaaclab.utils import math as math_utils
 from isaaclab.utils.math import quat_from_euler_xyz, sample_uniform
-from pxr import Gf, Sdf, UsdGeom
+from pxr import Gf, Sdf, Usd, UsdGeom
 
 from .spawn_boundary import get_mat_material_paths, get_vpt_material_paths
 from .vpt_env_cfg_v15_rl import VPTEnvCfg
@@ -577,6 +577,7 @@ class VPTEnvAStarStrategy(DirectRLEnv):
             "skipped_candidates": scene_cfg.get("skipped_candidates", []),
             "settings": saved_records,
         }
+        self._save_strategy_env_config(scene_id, env_id, scene_cfg, saved_records)
 
     def _generate_strategy_scene(self, env_id: int, scene_id: int) -> bool:
         """Try one complete VPT-Strategy scene and save it if it has a 5/5 split."""
@@ -681,6 +682,7 @@ class VPTEnvAStarStrategy(DirectRLEnv):
             "rail_normal": scene_cfg["rail_normal"].detach().cpu().tolist(),
             "settings": saved_records,
         }
+        self._save_strategy_env_config(scene_id, env_id, scene_cfg, saved_records)
         self._log(
             f"[strategy:gen] scene={scene_id} ACCEPT "
             f"Yes={labels.count('Yes')} No={labels.count('No')} "
@@ -1460,6 +1462,138 @@ class VPTEnvAStarStrategy(DirectRLEnv):
             },
         }
         return record
+
+    def _json_safe(self, value: Any) -> Any:
+        """Convert tensors and numpy scalars into JSON-safe values."""
+        if torch.is_tensor(value):
+            return value.detach().cpu().tolist()
+        if isinstance(value, np.ndarray):
+            return value.tolist()
+        if isinstance(value, np.generic):
+            return value.item()
+        if isinstance(value, dict):
+            return {str(k): self._json_safe(v) for k, v in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [self._json_safe(v) for v in value]
+        return value
+
+    def _pose_record(self, position: Any, orientation: Any) -> dict[str, Any]:
+        """Return a replay-compatible pose record."""
+        return {
+            "position": self._json_safe(position),
+            "orientation": self._json_safe(orientation),
+        }
+
+    def _strategy_object_config_records(self, scene_cfg: dict[str, Any]) -> list[dict[str, Any]]:
+        """Build replay metadata for active strategy VPT objects."""
+        records: list[dict[str, Any]] = []
+        active_indices = self._strategy_active_indices()
+        occ_idx = active_indices[0]
+
+        def add_record(obj_idx: int, pose: torch.Tensor, scale: list[float], role: str) -> None:
+            bbox_dims = []
+            if hasattr(self, "vpt_base_dims") and obj_idx < len(self.vpt_base_dims):
+                bbox_dims = (self.vpt_base_dims[obj_idx] * torch.tensor(scale, device=self.device)).detach().cpu().tolist()
+            records.append({
+                "index": int(obj_idx),
+                "obj_index": int(obj_idx),
+                "role": role,
+                "position": self._json_safe(pose[:3]),
+                "orientation": self._json_safe(pose[3:7]),
+                "applied_scale": self._json_safe(scale),
+                "dimensions_bbox": bbox_dims,
+                "z_offset_ratio": 0.0,
+                "shape_id": -1.0,
+            })
+
+        occ_pose = torch.cat([scene_cfg["occluder_pos"], scene_cfg["occluder_quat"]])
+        add_record(occ_idx, occ_pose, scene_cfg.get("occluder_scale", [1.0, 1.0, 1.0]), "occluder")
+
+        for obj_idx, pose in scene_cfg.get("distractor_poses", {}).items():
+            scale = scene_cfg.get("distractor_scales", {}).get(obj_idx, [1.0, 1.0, 1.0])
+            add_record(int(obj_idx), pose, scale, "distractor")
+        return records
+
+    def _save_strategy_env_config(
+        self,
+        scene_id: int,
+        env_id: int,
+        scene_cfg: dict[str, Any],
+        saved_records: list[dict[str, Any]],
+    ) -> None:
+        """Save a replayable config for a full VPT1 strategy scene."""
+        if not saved_records:
+            return
+        first = saved_records[0]
+        identity = [1.0, 0.0, 0.0, 0.0]
+        labels = scene_cfg.get("labels", [])
+        config = {
+            "metadata": {
+                "env_id": int(env_id),
+                "folder_idx": int(scene_id),
+                "scene_id": int(scene_id),
+                "task": "VPT-v18-strategy",
+                "visibility_label": first.get("label", "UNKNOWN"),
+                "visibility_reason": first.get("reason", "strategy_first_setting"),
+                "cfg_version": "strategy_v1",
+            },
+            "environment_settings": {
+                "boundary_limits": list(self.cfg.boundary_limits),
+                "agent_height": float(self.cfg.agent_height),
+                "agent_camera_pitch": float(self.cfg.agent_camera_pitch),
+                "action_scale": float(self.cfg.action_scale),
+                "num_vpt_objs": int(self.cfg.num_vpt_objs),
+                "images_per_scene": int(self.images_per_scene),
+                "required_yes": int(self.required_yes),
+                "required_no": int(self.required_no),
+                "human_vpt1_accuracy_range": [76.0, 83.0],
+                "vpt1_ft_expected_max_accuracy_note": "Prior VPT1 FT strategy-like checks did not cross 70.",
+            },
+            "goal_ball": self._pose_record(first["goal_pos"], identity),
+            "camera_object": self._pose_record(first["camera_pos"], identity),
+            "agent": self._pose_record(scene_cfg["agent_pos"], scene_cfg["agent_quat"]),
+            "vpt_objects": {
+                "total_count": int(self.num_objs),
+                "active_count": int(len(self._strategy_active_indices())),
+                "active_indices": self._strategy_active_indices(),
+                "objects": self._strategy_object_config_records(scene_cfg),
+            },
+            "strategy_scene": {
+                "labels": {"Yes": labels.count("Yes"), "No": labels.count("No")},
+                "origin": self._json_safe(scene_cfg.get("origin")),
+                "center": self._json_safe(scene_cfg.get("center")),
+                "rail_axis": self._json_safe(scene_cfg.get("rail_axis")),
+                "rail_normal": self._json_safe(scene_cfg.get("rail_normal")),
+                "axis_valid_candidate_count": int(scene_cfg.get("axis_valid_candidate_count", 0)),
+                "candidate_bank_size": len(scene_cfg.get("settings", [])),
+                "thresholds": {
+                    "cam_red_thresh": int(self.cam_red_thresh),
+                    "cam_no_red_max": int(self.cam_no_red_max),
+                    "agent_goal_thresh": int(self.goal_pixel_threshold),
+                    "agent_camera_thresh": int(self.camera_pixel_threshold),
+                    "agent_deadzone_deg": float(self.agent_deadzone_deg),
+                    "agent_perp_deadzone_deg": float(self.agent_perp_deadzone_deg),
+                },
+                "rail": {
+                    "rail_extent": float(self.rail_extent),
+                    "camera_goal_distance": float(self.camera_goal_distance),
+                    "min_selected_pair_distance": float(self.min_selected_pair_distance),
+                },
+                "settings": self._json_safe(saved_records),
+                "skipped_candidates": self._json_safe(scene_cfg.get("skipped_candidates", [])),
+            },
+            "valid_viewpoints": {"count": 0, "positions": []},
+            "collected_viewpoints": {
+                "count": len(saved_records),
+                "positions": [record["camera_pos"] for record in saved_records],
+            },
+        }
+
+        config_dir = Path(self.base_path) / "configs"
+        config_dir.mkdir(parents=True, exist_ok=True)
+        config_path = config_dir / f"env_{scene_id}_config.json"
+        with open(config_path, "w") as f:
+            json.dump(config, f, indent=2)
 
     def _save_strategy_labels(self) -> None:
         """Write scene-level and setting-level labels to strategy_labels.json."""

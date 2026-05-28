@@ -8,6 +8,7 @@ import numpy as np
 import os
 import cv2
 import re
+import json
 from typing import List
 import time
 import matplotlib.pyplot as plt
@@ -30,6 +31,7 @@ from isaaclab.utils import math as math_utils
 from .vpt2_env_cfg_v2 import VPTEnvCfg
 from .spawn_boundary import get_vpt_material_paths, get_mat_material_paths
 from .env_timer import EnvTimer
+from .env_config_replay import load_env_config_from_json as replay_env_config_from_json
 
 
 class VPTEnv(DirectRLEnv):
@@ -108,7 +110,7 @@ class VPTEnv(DirectRLEnv):
         self.visibility_labels_json_path = f"{self.base_path}/visibility_labels.json"
 
         # Mode determination
-        self.mode = "rl"
+        self.mode = "testing" if (self.config_file and os.path.exists(self.config_file)) else "rl"
         # self.mode = "rl_data_collection"
 
         self.total_envs_to_sim = 1000
@@ -812,8 +814,18 @@ class VPTEnv(DirectRLEnv):
             }
         }
 
-        # ========== CHANGE #1: Get active VPT indices ==========
         env_id_item = env_id.item() if torch.is_tensor(env_id) else env_id
+        active_ref_idx = self.active_ref_idx[env_id_item]
+        reference_objects = []
+        for ref_idx, ref_obj in enumerate(self._ref_objs):
+            reference_objects.append({
+                "index": ref_idx,
+                "active": active_ref_idx == ref_idx,
+                "position": ref_obj.data.root_pos_w[env_id].cpu().numpy().tolist(),
+                "orientation": ref_obj.data.root_quat_w[env_id].cpu().numpy().tolist(),
+            })
+
+        # ========== CHANGE #1: Get active VPT indices ==========
         active_indices = self.active_vpt_indices[env_id_item]
         active_indices_list = active_indices.cpu().numpy().tolist()
         # =======================================================
@@ -863,6 +875,10 @@ class VPTEnv(DirectRLEnv):
                 "position": agent_pos,
                 "orientation": agent_quat,
                 "spawn_cfg": agent_spawn_cfg
+            },
+            "reference_objects": {
+                "active_index": active_ref_idx,
+                "objects": reference_objects
             },
             # ========== CHANGE #1: Add active VPT metadata ==========
             "vpt_objects": {
@@ -1211,6 +1227,12 @@ class VPTEnv(DirectRLEnv):
             env_ids = self._agent._ALL_INDICES
         if not torch.is_tensor(env_ids):
             env_ids = torch.tensor(env_ids, dtype=torch.long, device=self.device)
+
+        if self.mode == "testing" and self.config_file:
+            for env_id in env_ids.view(-1).tolist():
+                self.load_env_config_from_json(self.config_file, env_id)
+            return
+
         active_slots_list = env_ids.tolist()
 
         # --- 2. Lazy Init ---
@@ -1261,6 +1283,9 @@ class VPTEnv(DirectRLEnv):
 
         self._replenish_slots(valid_slots + exceeded_slots)
         self._reset_called = True
+
+    def load_env_config_from_json(self, config_path: str, target_env_id: int = 0) -> dict:
+        return replay_env_config_from_json(self, config_path, target_env_id)
 
     def _randomize_scene_props(self, env_ids):
         """Helper to handle all the randomization logic for specific environments."""

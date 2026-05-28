@@ -31,11 +31,16 @@ parser.add_argument(
 )
 parser.add_argument("--num_envs", type=int, default=30, help="Number of environments to simulate.")
 parser.add_argument("--task", type=str, default="VPT-v18-camera", help="Name of the task.")
+parser.add_argument("--config_file", type=str, default=None, help="Path to a saved env config JSON to replay.")
 
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
 args_cli = parser.parse_args()
+
+if args_cli.config_file is not None and args_cli.num_envs != 1:
+    print("[INFO]: --config_file is single-env replay; forcing --num_envs 1.")
+    args_cli.num_envs = 1
 
 args_cli.enable_cameras = True
 args_cli.headless = True
@@ -64,6 +69,7 @@ def main():
     env_cfg = parse_env_cfg(
         args_cli.task, device=args_cli.device, num_envs=args_cli.num_envs, use_fabric=not args_cli.disable_fabric
     )
+    env_cfg.config_file = args_cli.config_file
     # create environment
     env = gym.make(args_cli.task, cfg=env_cfg)
 

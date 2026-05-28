@@ -29,6 +29,7 @@ from isaaclab.utils import math as math_utils
 from .vpt_env_cfg_v15_rl import VPTEnvCfg
 from .spawn_boundary import get_vpt_material_paths, get_mat_material_paths
 from .env_timer import EnvTimer
+from .env_config_replay import load_env_config_from_json as replay_env_config_from_json
 
 
 class VPTEnv(DirectRLEnv):
@@ -949,6 +950,12 @@ class VPTEnv(DirectRLEnv):
 
         if not torch.is_tensor(env_ids):
             env_ids = torch.tensor(env_ids, dtype=torch.long, device=self.device)
+
+        if self.mode == "testing" and self.config_file:
+            for env_id in env_ids.view(-1).tolist():
+                self.load_env_config_from_json(self.config_file, env_id)
+            return
+
         active_slots_list = env_ids.tolist()
 
         self._ensure_slot_initialization()
@@ -992,6 +999,9 @@ class VPTEnv(DirectRLEnv):
 
         self._replenish_slots(valid_slots + exceeded_slots)
         self._reset_called = True
+
+    def load_env_config_from_json(self, config_path: str, target_env_id: int = 0) -> dict:
+        return replay_env_config_from_json(self, config_path, target_env_id)
 
     def _ensure_slot_initialization(self) -> None:
         if hasattr(self, "slot_folder_indices"):

@@ -31,6 +31,12 @@ parser.add_argument(
 )
 parser.add_argument("--num_envs", type=int, default=36, help="Number of environments to simulate.")
 parser.add_argument("--task", type=str, default="VPT2-v3", help="Name of the task.")
+parser.add_argument(
+    "--config_file",
+    type=str,
+    default=None,
+    help="Replay one saved environment config JSON instead of sampling a new env.",
+)
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
@@ -61,10 +67,17 @@ import cube_game.tasks  # noqa: F401
 
 def main():
     """Keyboard control agent with Isaac Lab environment."""
+    if args_cli.config_file:
+        print(f"[INFO]: Loading config file: {args_cli.config_file}")
+        args_cli.num_envs = 1
+
     # create environment configuration
     env_cfg = parse_env_cfg(
         args_cli.task, device=args_cli.device, num_envs=args_cli.num_envs, use_fabric=not args_cli.disable_fabric
     )
+    if args_cli.config_file:
+        env_cfg.config_file = args_cli.config_file
+
     # create environment
     env = gym.make(args_cli.task, cfg=env_cfg)
 

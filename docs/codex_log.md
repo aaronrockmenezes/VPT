@@ -1,5 +1,44 @@
 # Codex Project Log
 
+## 2026-05-27
+
+**Task:** Add exact v18 config save and single-env replay.
+
+**Files changed:**
+
+- `VPTnav_code/cube_game/source/cube_game/cube_game/tasks/direct/cube_game/vpt_env_v18.py`
+- `VPTnav_code/cube_game/scripts/vptnav/keyboard_agent.py`
+- `VPTnav_code/cube_game/scripts/vptnav/generate_one_v18_config.py`
+- `VPTnav_code/cube_game/scripts/vptnav/generate_n_v18_configs.py`
+- `VPTnav_code/cube_game/scripts/vptnav/replay_random_capture.py`
+- `VPTnav_code/cube_game/scripts/vptnav/replay_many_random_capture.py`
+- `docs/codex_log.md`
+
+**Summary:**
+
+Extended v18 saved configs with replay metadata for randomized object scales,
+final bounds, material `.mdl` paths/names, floor material, wall shader values,
+and light parameters. Added a loader that restores saved object poses, active
+VPT indices, visual randomization, sensors, and OBB cache. `keyboard_agent.py`
+now accepts `--config_file` and forces single-env replay for that mode. Added
+action `7` to save the current agent RGB view using the A* debug-frame pattern,
+plus small scripts to generate one config and replay 10 random actions with
+captures. Added batch scripts for the current sample workflow: generate 10 v18
+configs in one Isaac process, then replay those configs one by one and capture
+10 random forward/left/right frames per sample.
+
+**Open questions:**
+
+- Runtime visual equivalence still needs an Isaac Lab smoke replay against a
+  freshly generated v18 config.
+
+**Next actions:**
+
+- Generate one new v18 env, inspect the saved `scene_randomization` block, then
+  replay it with `replay_random_capture.py --config_file`.
+- Run the 10-sample batch workflow and visually inspect
+  `replay_random_10/sample_*/env_0`.
+
 ## 2026-05-12
 
 **Task:** Establish root VPT agent instructions and project log.
@@ -729,3 +768,95 @@ VPT2 LP+FT, then generate/build/analyze VPT1 Strategy.
 
 - Re-check `squeue -u arock3` and result counts before canceling or relaunching
   anything.
+
+## 2026-05-28
+
+**Task:** Log VPT2-v4 LP/FT thesis results and VPT1 depth FT compile status.
+
+**Files changed:**
+
+- `docs/results/vpt2_v4/vpt2_v4_linear_probe_results.csv`
+- `docs/results/vpt2_v4/vpt2_v4_finetune_results.csv`
+- `docs/codex_log.md`
+
+**Summary:**
+
+Saved the pasted VPT2-v4 linear probe and fine-tune result tables as CSVs.
+VPT2 LP total average row is `51.947, 51.853, 51.955, 51.918`; VPT2 FT total
+average row is `86.617, 86.496, 86.996, 86.703`. VPT1 depth FT array appears
+done, but compile job `2874005` is held/requeued with
+`user env retrieval failed requeued held`.
+
+**Open questions:**
+
+- Whether the held SLURM compile job should be canceled after manually compiling
+  VPT1 depth FT results.
+
+**Next actions:**
+
+- Manually compile VPT1 depth FT results from the existing result shards.
+
+## 2026-05-28 (2)
+
+**Task:** Save VPT1 depth FT results and analyze current thesis LP/FT tables.
+
+**Files changed:**
+
+- `docs/results/vpt1_v18_depth/vpt1_v18_depth_finetune_results.csv`
+- `scripts/analyze_thesis_results.py`
+- `docs/results/thesis_analysis/`
+- `docs/codex_log.md`
+
+**Summary:**
+
+Saved the VPT1 v18 depth FT table. Added a reusable thesis analysis script and
+generated matched result CSVs, Plotly HTML plots, static PNG plots, and a
+summary markdown report across VPT1 v18, VPT1 v18 depth, and VPT2 v4. Headline
+totals: VPT1 v18 LP/FT `55.209/57.294`, VPT1 depth LP/FT `78.210/88.934`,
+and VPT2 v4 LP/FT `51.918/86.703`.
+
+**Open questions:**
+
+- Whether FT numbers are final-reportable or should be rerun with explicit
+  train/val checkpoint selection and one held-out test evaluation.
+
+**Next actions:**
+
+- Use the analysis outputs to pick candidate models for reruns and thesis
+  figures.
+
+## 2026-05-28 (3)
+
+**Task:** Add config replay support for VPT strategy/depth/VPT2 workflows.
+
+**Files changed:**
+
+- `VPTnav_code/cube_game/source/cube_game/cube_game/tasks/direct/cube_game/env_config_replay.py`
+- `VPTnav_code/cube_game/source/cube_game/cube_game/tasks/direct/cube_game/vpt_env_v18_A_star_strategy.py`
+- `VPTnav_code/cube_game/source/cube_game/cube_game/tasks/direct/cube_game/vpt_env_v18_depth.py`
+- `VPTnav_code/cube_game/source/cube_game/cube_game/tasks/direct/cube_game/vpt2_env_v4.py`
+- `VPTnav_code/cube_game/scripts/vptnav/vpt2_keyboard_agent.py`
+- `docs/codex_log.md`
+
+**Summary:**
+
+VPT1 strategy is the proxy LOS test set: freeze the agent/observer and move
+only camera plus goal, with each accepted scene saving five `Yes` and five `No`
+camera-view images. Added per-scene replay configs for this strategy set. The
+expected thesis hypothesis is that this is hard: prior VPT1 FT strategy-like
+performance did not cross 70%, while human VPT1 accuracy is roughly 76-83%.
+
+Added a shared config replay helper for VPT-style envs, wired it into VPT1
+depth and VPT2-v4 testing mode, and made VPT2 configs save/replay the active
+pink reference object. VPT2 keyboard replay now accepts `--config_file`.
+
+**Open questions:**
+
+- Whether VPT2 strategy should be a separate registered env with `left/right`
+  balanced rail settings, or generated by a wrapper around VPT2-v4 once the
+  exact reference-object placement rule is finalized.
+
+**Next actions:**
+
+- Generate a small VPT1 v18 strategy test set, replay a few configs locally on
+  Oscar, then run VPT1 LP/FT checkpoints against it.

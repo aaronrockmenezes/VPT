@@ -54,6 +54,14 @@ class VPTEnv(DirectRLEnv):
         self.moved_vpt_objs = [[] for _ in range(self.num_envs)]
         self.used_vpt_objects = set()
 
+        # --- Replay Metadata ---
+        self.applied_scales = {}
+        self.applied_materials = {}
+        self.applied_mat_materials = {}
+        self.applied_wall_colors = {}
+        self.applied_light_params = {}
+        self.material_prim_to_mdl_path = {}
+
         # --- Data Collection Settings ---
         self.mode = "testing" if (self.config_file and os.path.exists(self.config_file)) else "data_collection"
         self.images_per_env = 10
@@ -87,6 +95,7 @@ class VPTEnv(DirectRLEnv):
         self.env_visibility_reasons = {}
         self._reset_called = False
         self.times = {}
+        self.capture_frame_counters = [0] * self.num_envs
 
         # In __init__
         self._preallocate_visibility_labels()
@@ -232,12 +241,14 @@ class VPTEnv(DirectRLEnv):
             path = f"/World/Looks/mat_material_{idx}"
             material.func(path, material)
             self.mat_material_paths.append(path)
+            self.material_prim_to_mdl_path[path] = material.mdl_path
 
         self.vpt_material_paths = []
         for idx, material in enumerate(self.vpt_material_configs):
             path = f"/World/Looks/vpt_material_{idx}"
             material.func(path, material)
             self.vpt_material_paths.append(path)
+            self.material_prim_to_mdl_path[path] = material.mdl_path
 
     # TODO: CONSIDER MERGING WITH _check_occlusion
     def check_batch_object_visibility(
@@ -293,6 +304,7 @@ class VPTEnv(DirectRLEnv):
             3: Turn Right
             5: Soft Reset (Non-RL)
             6: Hard Reset (RL)
+            7: Save current agent RGB view
         env_ids : Sequence[int] | None, optional
             Indices of environments to update. If None, updates all.
 
@@ -309,10 +321,11 @@ class VPTEnv(DirectRLEnv):
             env_ids = torch.tensor(env_ids, dtype=torch.long, device=self.device)
 
         # --- 2. Handle Resets ---
-        # Action 5: Soft Reset, Action 6: Hard Reset
+        # Action 5: Soft Reset, Action 6: Hard Reset, Action 7: Capture
         reset_mask_5 = (actions == 5)
         reset_mask_6 = (actions == 6)
-        physics_mask = ~(reset_mask_5 | reset_mask_6)
+        capture_mask = (actions == 7)
+        physics_mask = ~(reset_mask_5 | reset_mask_6 | capture_mask)
 
         if reset_mask_5.any():
             self._reset_idx(env_ids[reset_mask_5], rl_reset=False)
@@ -320,6 +333,9 @@ class VPTEnv(DirectRLEnv):
         if reset_mask_6.any():
             print("+" * 50) # Visual separator for hard resets
             self._reset_idx(env_ids[reset_mask_6], rl_reset=True)
+
+        if capture_mask.any():
+            self._save_agent_view_capture(env_ids[capture_mask])
 
         # Exit if only resets occurred
         if not physics_mask.any():
@@ -395,6 +411,34 @@ class VPTEnv(DirectRLEnv):
         new_pose = torch.cat([tentative_pos, new_quat], dim=1)
         self._agent.write_root_com_pose_to_sim(new_pose, phys_ids)
         self._agent.reset()
+
+    def _save_agent_view_capture(self, env_ids: torch.Tensor) -> None:
+        """Save current agent RGB observations, following the A* debug frame pattern."""
+        if not hasattr(self, "obs") or self.obs is None:
+            self._rgb_tiled_camera.update(self.sim.cfg.dt)
+            rgb_data = self._rgb_tiled_camera.data.output["rgb"]
+            self.obs = rgb_data.permute(0, 3, 1, 2)[:, :3, :, :].clone()
+
+        capture_root = os.getenv(
+            "VPT_REPLAY_CAPTURE_DIR",
+            os.path.join(self.base_path, "replay_captures"))
+
+        for env_id in env_ids.tolist():
+            if env_id >= self.obs.shape[0]:
+                continue
+            frame = self.obs[env_id].permute(1, 2, 0).contiguous()
+            if hasattr(frame, "cpu"):
+                frame = frame.cpu().numpy()
+            if frame.dtype != np.uint8:
+                frame = frame.astype(np.uint8)
+
+            env_dir = os.path.join(capture_root, f"env_{env_id}")
+            os.makedirs(env_dir, exist_ok=True)
+            step_n = self.capture_frame_counters[env_id]
+            fname = f"step_{step_n:05d}_capture.png"
+            cv2.imwrite(os.path.join(env_dir, fname),
+                        cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+            self.capture_frame_counters[env_id] += 1
 
     def _update_camera_poses(self, env_ids):
         """Helper to handle the camera/occlusion update logic."""
@@ -735,10 +779,6 @@ class VPTEnv(DirectRLEnv):
             env_id: Environment ID (index in batch)
             folder_idx: Folder index for this environment
         """
-        import json
-
-        device = self._agent.device
-
         # Get visibility info
         label = self.env_visibility_labels.get(folder_idx, "UNKNOWN")
         reason = self.env_visibility_reasons.get(folder_idx, "unknown")
@@ -827,7 +867,7 @@ class VPTEnv(DirectRLEnv):
                 "folder_idx": folder_idx,
                 "visibility_label": label,
                 "visibility_reason": reason,
-                "cfg_version": "1.0"
+                "cfg_version": "2.0"
             },
             "environment_settings": {
                 "boundary_limits": list(self.cfg.boundary_limits),
@@ -875,6 +915,14 @@ class VPTEnv(DirectRLEnv):
                 ).numpy().tolist()
                 if self.selected_viewpoints_for_collection[env_id_item]
                 is not None else []
+            },
+            "scene_randomization": {
+                "floor_material":
+                self.applied_mat_materials.get(env_id_item, {}),
+                "wall_colors":
+                self.applied_wall_colors.get(env_id_item, {}),
+                "lights":
+                self.applied_light_params.get(env_id_item, [])
             }
         }
 
@@ -916,10 +964,30 @@ class VPTEnv(DirectRLEnv):
                 size_info['height'] = float(vpt_spawn_cfg.height)
                 size_info['radius'] = float(vpt_spawn_cfg.radius)
 
+            material_info = self.applied_materials.get(
+                (env_id_item, obj_idx_item), {})
             vpt_obj = {
                 "index": obj_idx_item,
                 "position": vpt_positions[obj_idx_item],
                 "orientation": vpt_orientations[obj_idx_item],
+                "applied_scale":
+                self.applied_scales.get((env_id_item, obj_idx_item),
+                                        [1.0, 1.0, 1.0]),
+                "dimensions_bbox":
+                self._tensor_row_to_list(getattr(self, "all_vpt_dims", None),
+                                         env_id_item, obj_idx_item),
+                "z_offset_ratio":
+                self._tensor_item(getattr(self, "vpt_z_offset_ratios", None),
+                                  env_id_item, obj_idx_item, default=0.0),
+                "shape_id":
+                self._tensor_item(getattr(self, "vpt_shapes", None),
+                                  env_id_item, obj_idx_item, default=-1.0),
+                "material_prim_path":
+                material_info.get("material_prim_path", ""),
+                "material_mdl_path":
+                material_info.get("material_mdl_path", ""),
+                "material_name":
+                material_info.get("material_name", ""),
                 "spawn_cfg": {
                     **size_info, "rigid_props": rigid_props,
                     "mass_props": mass_props,
@@ -943,6 +1011,308 @@ class VPTEnv(DirectRLEnv):
         # print(
         #     f"     Active VPT objects: {self.active_vpt_objs}/{self.num_objs}"
         # )
+
+    def _tensor_item(self, tensor, env_id: int, obj_idx: int, default: float = 0.0) -> float:
+        if tensor is None:
+            return default
+        try:
+            return float(tensor[env_id, obj_idx].item())
+        except Exception:
+            return default
+
+    def _tensor_row_to_list(self, tensor, env_id: int, obj_idx: int) -> list[float]:
+        if tensor is None:
+            return []
+        try:
+            return tensor[env_id, obj_idx].detach().cpu().numpy().tolist()
+        except Exception:
+            return []
+
+    def _material_mdl_path(self, material_prim_path: str) -> str:
+        if not material_prim_path:
+            return ""
+        return self.material_prim_to_mdl_path.get(material_prim_path, "")
+
+    def _material_name(self, mdl_path: str) -> str:
+        if not mdl_path:
+            return ""
+        return os.path.splitext(os.path.basename(mdl_path))[0]
+
+    def _ensure_replay_cache_tensors(self) -> None:
+        if not hasattr(self, "vpt_base_dims"):
+            self._cache_base_dims()
+        if not hasattr(self, "all_vpt_dims") or self.all_vpt_dims.shape[0] != self.num_envs:
+            self.all_vpt_dims = self.vpt_base_dims.unsqueeze(0).repeat(
+                self.num_envs, 1, 1)
+        if not hasattr(self, "vpt_z_offset_ratios") or self.vpt_z_offset_ratios.shape != (
+                self.num_envs, self.cfg.num_vpt_objs):
+            self.vpt_z_offset_ratios = torch.zeros(
+                (self.num_envs, self.cfg.num_vpt_objs), device=self.device)
+        if not hasattr(self, "vpt_shapes") or self.vpt_shapes.shape != (
+                self.num_envs, self.cfg.num_vpt_objs):
+            self.vpt_shapes = torch.zeros(
+                (self.num_envs, self.cfg.num_vpt_objs), device=self.device)
+
+    def _ensure_replay_material(self,
+                                material_info,
+                                material_type: str,
+                                fallback_prim_path: str = "") -> str:
+        if isinstance(material_info, str):
+            material_prim_path = material_info
+            mdl_path = self._material_mdl_path(material_prim_path)
+        elif isinstance(material_info, dict):
+            material_prim_path = material_info.get("material_prim_path", "")
+            mdl_path = material_info.get("material_mdl_path", "")
+        else:
+            material_prim_path = ""
+            mdl_path = ""
+
+        if mdl_path:
+            replay_key = f"{material_type}_{self._material_name(mdl_path)}"
+            replay_key = re.sub(r"[^A-Za-z0-9_]+", "_", replay_key).strip("_")
+            replay_path = f"/World/Looks/replay_{replay_key}"
+            if replay_path not in self.material_prim_to_mdl_path:
+                tex_scale = (1000.0, 1000.0) if material_type == "mat" else (2.0, 2.0)
+                material_cfg = sim_utils.MdlFileCfg(
+                    mdl_path=mdl_path,
+                    project_uvw=True,
+                    texture_scale=tex_scale,
+                )
+                material_cfg.func(replay_path, material_cfg)
+                self.material_prim_to_mdl_path[replay_path] = mdl_path
+            return replay_path
+
+        if material_prim_path:
+            print(f"⚠️ Replay material has no saved .mdl path; using prim path {material_prim_path}")
+            return material_prim_path
+
+        if fallback_prim_path:
+            print(f"⚠️ Missing replay material metadata for {fallback_prim_path}")
+        return ""
+
+    def _apply_replay_scale(self,
+                            env_id: int,
+                            obj_idx: int,
+                            scale: list[float],
+                            z_offset_ratio: float,
+                            bbox_dims: list[float]) -> None:
+        if not scale:
+            return
+
+        stage = get_current_stage()
+        prim_path = f"/World/envs/env_{env_id}/obs_{obj_idx}"
+        prim = stage.GetPrimAtPath(prim_path)
+        if not prim.IsValid():
+            print(f"⚠️ Replay scale skipped; invalid prim: {prim_path}")
+            return
+
+        xform = UsdGeom.Xformable(prim)
+        scale_op = None
+        translate_op = None
+        for op in xform.GetOrderedXformOps():
+            if op.GetOpType() == UsdGeom.XformOp.TypeScale:
+                scale_op = op
+            elif op.GetOpType() == UsdGeom.XformOp.TypeTranslate:
+                translate_op = op
+
+        if scale_op is None:
+            scale_op = xform.AddScaleOp(UsdGeom.XformOp.PrecisionDouble)
+        if translate_op is None:
+            translate_op = xform.AddTranslateOp(UsdGeom.XformOp.PrecisionDouble)
+
+        scale_op.Set(Gf.Vec3d(float(scale[0]), float(scale[1]), float(scale[2])))
+
+        if bbox_dims:
+            current_trans = translate_op.Get() or Gf.Vec3d(0, 0, 0)
+            final_z = float(bbox_dims[2]) * float(z_offset_ratio)
+            translate_op.Set(Gf.Vec3d(current_trans[0], current_trans[1], final_z))
+
+    def _apply_wall_color(self, wall_path: str, wall_data) -> None:
+        if isinstance(wall_data, dict):
+            color = wall_data.get("color")
+            roughness = wall_data.get("roughness")
+            metallic = wall_data.get("metallic")
+        else:
+            color = wall_data
+            roughness = None
+            metallic = None
+        if not color:
+            return
+
+        stage = get_current_stage()
+        prim = stage.GetPrimAtPath(wall_path)
+        if not prim.IsValid():
+            return
+        for child in Usd.PrimRange(prim):
+            if child.GetTypeName() == "Shader":
+                attr = child.GetAttribute("inputs:diffuseColor")
+                if attr:
+                    attr.Set(Gf.Vec3f(float(color[0]), float(color[1]), float(color[2])))
+                if roughness is not None:
+                    rough_attr = child.GetAttribute("inputs:roughness")
+                    if rough_attr:
+                        rough_attr.Set(float(roughness))
+                if metallic is not None:
+                    metal_attr = child.GetAttribute("inputs:metallic")
+                    if metal_attr:
+                        metal_attr.Set(float(metallic))
+                break
+
+    def load_env_config_from_json(self,
+                                  config_path: str,
+                                  target_env_id: int = 0,
+                                  apply_visuals: bool = True) -> dict:
+        if not os.path.exists(config_path):
+            raise FileNotFoundError(f"Config file not found: {config_path}")
+
+        with open(config_path, "r") as f:
+            config = json.load(f)
+
+        device = self.device
+        env_id = target_env_id.item() if torch.is_tensor(target_env_id) else int(target_env_id)
+        env_ids = torch.tensor([env_id], dtype=torch.long, device=device)
+        self._ensure_replay_cache_tensors()
+
+        def tensor_pose(entity: dict, pos_key: str = "position", quat_key: str = "orientation") -> torch.Tensor:
+            pos = entity[pos_key]
+            quat = entity.get(quat_key, [1.0, 0.0, 0.0, 0.0])
+            return torch.tensor([pos + quat], dtype=torch.float32, device=device)
+
+        goal_pose = tensor_pose(config["goal_ball"])
+        camera_pose = tensor_pose(config["camera_object"])
+        agent_pose = tensor_pose(config["agent"])
+
+        self._goal.write_root_com_pose_to_sim(goal_pose, env_ids)
+        self._goal.write_root_com_velocity_to_sim(torch.zeros((1, 6), device=device), env_ids)
+        self._camera_obj.write_root_com_pose_to_sim(camera_pose, env_ids)
+        self._camera_obj.write_root_com_velocity_to_sim(torch.zeros((1, 6), device=device), env_ids)
+        self._agent.write_root_com_pose_to_sim(agent_pose, env_ids)
+        self._agent.write_root_com_velocity_to_sim(torch.zeros((1, 6), device=device), env_ids)
+
+        vpt_cfg = config.get("vpt_objects", {})
+        active_indices = torch.tensor(
+            vpt_cfg.get("active_indices", []), dtype=torch.long, device=device)
+        self.active_vpt_indices[env_id] = active_indices
+
+        vpt_state = self._vpt_objects.data.default_object_state[env_id].clone()
+        vpt_state[:, 0] = self.storage_position[0]
+        vpt_state[:, 1] = self.storage_position[1]
+        vpt_state[:, 2] = self.storage_position[2]
+        vpt_state[:, 3:7] = 0.0
+        vpt_state[:, 3] = 1.0
+        vpt_state[:, 7:13] = 0.0
+
+        for obj_data in vpt_cfg.get("objects", []):
+            obj_idx = int(obj_data.get("index", obj_data.get("obj_index")))
+            vpt_state[obj_idx, :3] = torch.tensor(
+                obj_data["position"], dtype=torch.float32, device=device)
+            vpt_state[obj_idx, 3:7] = torch.tensor(
+                obj_data.get("orientation", obj_data.get("quat_wxyz", [1, 0, 0, 0])),
+                dtype=torch.float32,
+                device=device)
+            vpt_state[obj_idx, 7:13] = 0.0
+
+            bbox_dims = obj_data.get("dimensions_bbox", [])
+            if bbox_dims:
+                self.all_vpt_dims[env_id, obj_idx] = torch.tensor(
+                    bbox_dims, dtype=torch.float32, device=device)
+            z_offset_ratio = float(obj_data.get("z_offset_ratio", 0.0))
+            self.vpt_z_offset_ratios[env_id, obj_idx] = z_offset_ratio
+            self.vpt_shapes[env_id, obj_idx] = float(obj_data.get("shape_id", -1.0))
+
+            if apply_visuals:
+                self._apply_replay_scale(
+                    env_id=env_id,
+                    obj_idx=obj_idx,
+                    scale=obj_data.get("applied_scale", []),
+                    z_offset_ratio=z_offset_ratio,
+                    bbox_dims=bbox_dims)
+                material_path = self._ensure_replay_material(
+                    obj_data,
+                    material_type="vpt",
+                    fallback_prim_path=f"/World/envs/env_{env_id}/obs_{obj_idx}")
+                if material_path:
+                    sim_utils.bind_visual_material(
+                        f"/World/envs/env_{env_id}/obs_{obj_idx}", material_path)
+
+        self._vpt_objects.write_object_pose_to_sim(vpt_state[:, :7].unsqueeze(0), env_ids)
+        self._vpt_objects.write_object_velocity_to_sim(
+            torch.zeros((1, self.num_objs, 6), device=device), env_ids)
+
+        scene_random = config.get("scene_randomization", {})
+        if apply_visuals:
+            floor_material = self._ensure_replay_material(
+                scene_random.get("floor_material", {}),
+                material_type="mat",
+                fallback_prim_path=f"/World/envs/env_{env_id}/mat")
+            if floor_material:
+                sim_utils.bind_visual_material(f"/World/envs/env_{env_id}/mat", floor_material)
+
+            for wall_name, wall_data in scene_random.get("wall_colors", {}).items():
+                self._apply_wall_color(f"/World/envs/env_{env_id}/{wall_name}", wall_data)
+
+            stage = get_current_stage()
+            for light_info in scene_random.get("lights", []):
+                suffix = light_info.get("prim_path_suffix", "Light_A")
+                light_path = f"/World/envs/env_{env_id}/{suffix}"
+                prim = stage.GetPrimAtPath(light_path)
+                if not prim.IsValid():
+                    continue
+                if not light_info.get("active", True):
+                    prim.GetAttribute("inputs:intensity").Set(0.0)
+                    continue
+                prim.GetAttribute("inputs:intensity").Set(float(light_info["intensity"]))
+                prim.GetAttribute("inputs:radius").Set(float(light_info["radius"]))
+                prim.GetAttribute("inputs:enableColorTemperature").Set(True)
+                prim.GetAttribute("inputs:colorTemperature").Set(
+                    float(light_info["color_temperature"]))
+                pos = light_info["position"]
+                xform = UsdGeom.Xformable(prim)
+                translate_op = None
+                for op in xform.GetOrderedXformOps():
+                    if op.GetOpType() == UsdGeom.XformOp.TypeTranslate:
+                        translate_op = op
+                        break
+                if translate_op is None:
+                    translate_op = xform.AddTranslateOp()
+                translate_op.Set(Gf.Vec3d(float(pos[0]), float(pos[1]), float(pos[2])))
+
+        if "valid_viewpoints" in config:
+            positions = config["valid_viewpoints"].get("positions", [])
+            self.valid_viewpoint_poses[env_id] = torch.tensor(
+                positions, dtype=torch.float32, device=device) if positions else torch.zeros((0, 3), device=device)
+
+        if "collected_viewpoints" in config:
+            positions = config["collected_viewpoints"].get("positions", [])
+            self.selected_viewpoints_for_collection[env_id] = torch.tensor(
+                positions, dtype=torch.float32, device=device) if positions else None
+
+        folder_idx = config.get("metadata", {}).get("folder_idx", env_id)
+        self.env_visibility_labels[folder_idx] = config.get("metadata", {}).get(
+            "visibility_label", "UNKNOWN")
+        self.env_visibility_reasons[folder_idx] = config.get("metadata", {}).get(
+            "visibility_reason", "unknown")
+
+        self.scene.write_data_to_sim()
+        for _ in range(3):
+            self.sim.step(render=False)
+        self.scene.update(dt=self.step_dt)
+
+        self.update_obb_cache(env_ids, vpt_state.unsqueeze(0))
+        self._update_camera_poses(env_ids)
+        self._occlusion_camera.update(self.sim.cfg.dt)
+        self._rgb_tiled_camera.update(self.sim.cfg.dt)
+
+        if not scene_random and self.verbose >= 1:
+            print("⚠️ Loaded an older config without scene_randomization metadata; visual replay is layout-only.")
+        if self.verbose >= 1:
+            print(f"✅ Loaded environment configuration from: {config_path}")
+            print(f"   → Env {env_id}, Folder {folder_idx}")
+            print(f"   → Active VPT objects: {len(active_indices)}/{self.num_objs}")
+
+        self.mode = "testing"
+        self._reset_called = True
+        return config
 
     def _get_batch_active_indices(self, env_ids: int | list | torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
@@ -1167,6 +1537,13 @@ class VPTEnv(DirectRLEnv):
         # Ensure env_ids is a Tensor for internal ops, list for iteration
         if not torch.is_tensor(env_ids):
             env_ids = torch.tensor(env_ids, dtype=torch.long, device=self.device)
+
+        if self.mode == "testing" and self.config_file:
+            for env_id in env_ids:
+                self.load_env_config_from_json(self.config_file, env_id)
+            self._reset_called = True
+            return
+
         active_slots_list = env_ids.tolist()
 
         # Initialize slot tracking mechanism if this is the first run
@@ -1331,6 +1708,14 @@ class VPTEnv(DirectRLEnv):
         """
         if not env_ids:
             return
+
+        for env_id in env_ids:
+            self.applied_light_params[env_id] = []
+            self.applied_wall_colors[env_id] = {}
+            self.applied_mat_materials.pop(env_id, None)
+            for obj_id in range(self.cfg.num_vpt_objs):
+                self.applied_scales.pop((env_id, obj_id), None)
+                self.applied_materials.pop((env_id, obj_id), None)
 
         # 1. Randomize VPT Objects (Scale & Material)
         vpt_paths = [
@@ -3826,6 +4211,11 @@ class VPTEnv(DirectRLEnv):
                         final_z_pos = total_height * z_offset_multiplier
 
                     scale_op.Set(final_scale_vec)
+                    self.applied_scales[(env_idx, obj_idx)] = [
+                        float(final_scale_vec[0]),
+                        float(final_scale_vec[1]),
+                        float(final_scale_vec[2])
+                    ]
 
                     # Update Translate (Z-Position)
                     current_trans = translate_op.Get()
@@ -3882,9 +4272,29 @@ class VPTEnv(DirectRLEnv):
             for prim_path in prim_paths:
                 # --- Generate Random Values ---
                 rand_color = Gf.Vec3f(self.get_color())
+                try:
+                    parts = prim_path.split("/")
+                    env_part = next(p for p in parts if p.startswith("env_"))
+                    env_idx = int(env_part.split("_")[-1])
+                    wall_name = parts[-1]
+                    self.applied_wall_colors.setdefault(env_idx, {})[wall_name] = {
+                        "color": [
+                            float(rand_color[0]),
+                            float(rand_color[1]),
+                            float(rand_color[2])
+                        ]
+                    }
+                except (StopIteration, ValueError):
+                    env_idx = None
+                    wall_name = None
 
                 rand_roughness = random.random()
                 rand_metallic = random.random()
+                if env_idx is not None and wall_name is not None:
+                    self.applied_wall_colors[env_idx][wall_name][
+                        "roughness"] = float(rand_roughness)
+                    self.applied_wall_colors[env_idx][wall_name][
+                        "metallic"] = float(rand_metallic)
 
                 # Helper to set attribute on a shader spec
                 def _set_shader_attr(shader_spec, attr_name, value, type_name):
@@ -4009,6 +4419,14 @@ class VPTEnv(DirectRLEnv):
             # 2. INTENSITY
             if path not in active_paths:
                 prim.GetAttribute("inputs:intensity").Set(0.0)
+                self.applied_light_params.setdefault(env_idx, []).append({
+                    "prim_path_suffix": path.rsplit("/", 1)[-1],
+                    "active": False,
+                    "position": [0.0, 0.0, 0.0],
+                    "intensity": 0.0,
+                    "radius": 0.0,
+                    "color_temperature": 0.0
+                })
                 continue
 
             rand_intensity = random.uniform(40_000.0, 75_000.0)
@@ -4085,6 +4503,14 @@ class VPTEnv(DirectRLEnv):
             prim.GetAttribute("inputs:enableColorTemperature").Set(True)
             rand_temp = random.uniform(2000.0, 8000.0)
             prim.GetAttribute("inputs:colorTemperature").Set(rand_temp)
+            self.applied_light_params.setdefault(env_idx, []).append({
+                "prim_path_suffix": path.rsplit("/", 1)[-1],
+                "active": True,
+                "position": [final_x, final_y, final_z],
+                "intensity": float(rand_intensity),
+                "radius": float(rand_radius),
+                "color_temperature": float(rand_temp)
+            })
             # print(
             #     f"Position of Light = {new_pos}, Temp = {rand_temp}, Intensity = {rand_intensity}, Radius = {rand_radius}"
             # )
@@ -4256,6 +4682,24 @@ class VPTEnv(DirectRLEnv):
         for prim in prim_paths:
             rand_material = random.choice(material_pool)
             sim_utils.bind_visual_material(prim, rand_material)
+            mdl_path = self._material_mdl_path(rand_material)
+            material_info = {
+                "material_prim_path": rand_material,
+                "material_mdl_path": mdl_path,
+                "material_name": self._material_name(mdl_path)
+            }
+            try:
+                parts = prim.split("/")
+                env_part = next(p for p in parts if p.startswith("env_"))
+                env_idx = int(env_part.split("_")[-1])
+                if material_type == "vpt":
+                    obs_part = next(p for p in parts if p.startswith("obs_"))
+                    obj_idx = int(obs_part.split("_")[-1])
+                    self.applied_materials[(env_idx, obj_idx)] = material_info
+                elif material_type == "mat":
+                    self.applied_mat_materials[env_idx] = material_info
+            except (StopIteration, ValueError):
+                pass
 
     def get_obb_hitbox(self, env_ids: torch.Tensor,
                        vpt_state: torch.Tensor) -> torch.Tensor:
