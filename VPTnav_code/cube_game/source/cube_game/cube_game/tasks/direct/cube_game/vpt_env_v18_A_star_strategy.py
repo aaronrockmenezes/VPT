@@ -43,6 +43,13 @@ class VPTEnvAStarStrategy(DirectRLEnv):
         self.verbose = int(os.getenv("STRATEGY_VERBOSE", "1"))
         self.GPU_ID = os.getenv("CUDA_VISIBLE_DEVICES", "0").split(",")[0]
         self.NODE_ID = os.getenv("NODE_ID", os.getenv("SLURM_ARRAY_TASK_ID", "0"))
+        # Pre-init randomization tracking so _setup_scene (called by super.__init__) can write.
+        self.applied_scales: dict[tuple[int, int], list[float]] = {}
+        self.applied_materials: dict[tuple[int, int], dict[str, str]] = {}
+        self.applied_mat_materials: dict[int, dict[str, str]] = {}
+        self.applied_wall_colors: dict[int, dict[str, dict[str, Any]]] = {}
+        self.applied_light_params: dict[int, list[dict[str, Any]]] = {}
+        self.material_prim_to_mdl_path: dict[str, str] = {}
         super().__init__(cfg, render_mode, **kwargs)
 
         self.action_scale = self.cfg.action_scale
@@ -82,7 +89,7 @@ class VPTEnvAStarStrategy(DirectRLEnv):
         self.min_valid_candidate_points = int(os.getenv("STRATEGY_MIN_VALID_CANDIDATES", "30"))
         self.min_camera_goal_clearance = float(os.getenv("STRATEGY_MIN_CAMERA_GOAL_CLEARANCE", "1.0"))
         self.max_camera_goal_distance = float(os.getenv("STRATEGY_MAX_CAMERA_GOAL_DISTANCE", "6.0"))
-        self.min_selected_pair_distance = float(os.getenv("STRATEGY_MIN_SELECTED_PAIR_DISTANCE", "0.1"))
+        self.min_selected_pair_distance = float(os.getenv("STRATEGY_MIN_SELECTED_PAIR_DISTANCE", "0.25"))
         self.min_agent_clearance = float(os.getenv("STRATEGY_MIN_AGENT_CLEARANCE", "2.0"))
         # Distance from scene center along the rail axis for structured observer candidates.
         # Larger sees more of the rail but shrinks objects; smaller increases pixels but may crop endpoints.
@@ -104,6 +111,11 @@ class VPTEnvAStarStrategy(DirectRLEnv):
         self.scene_attempt_counts: dict[str, int] = {}
         self.next_scene_id = 0
         self._base_dims_cached = False
+
+        # Optional config replay (set on cfg by keyboard_agent --config_file).
+        self.config_file = getattr(self.cfg, "config_file", None)
+        self._replay_step_counter = 0
+        self._replay_done = False
 
         base = os.getenv("BASE_PATH", "/oscar/scratch/arock3/VPT_STRATEGY/v18")
         self.base_path = f"{base}/data/data_node{self.NODE_ID}_gpu{self.GPU_ID}"
@@ -200,10 +212,12 @@ class VPTEnvAStarStrategy(DirectRLEnv):
             path = f"/World/Looks/strategy_mat_material_{idx}"
             material.func(path, material)
             self.mat_material_paths.append(path)
+            self.material_prim_to_mdl_path[path] = getattr(material, "mdl_path", "")
         for idx, material in enumerate(self.vpt_material_configs):
             path = f"/World/Looks/strategy_vpt_material_{idx}"
             material.func(path, material)
             self.vpt_material_paths.append(path)
+            self.material_prim_to_mdl_path[path] = getattr(material, "mdl_path", "")
         self._log(f"[strategy:setup] done dt={time.perf_counter() - t0:.2f}s")
 
     def _pre_physics_step(self, actions: torch.Tensor) -> None:
@@ -211,9 +225,37 @@ class VPTEnvAStarStrategy(DirectRLEnv):
         self.actions = self.action_scale * actions.clone()
 
     def _apply_action(self) -> None:
-        """Treat reset actions as requests to generate more static scenes."""
+        """Treat reset actions as requests to generate more static scenes.
+
+        In replay mode (self.config_file set), action 7 captures the current
+        agent RGB view to disk and advances to the next saved setting.
+        """
         if not hasattr(self, "actions"):
             return
+
+        # Replay mode: auto-iterate over saved settings, capturing one per step.
+        # Action 7 also forces an explicit capture if desired; all other actions
+        # are swallowed so the config is not re-loaded every frame.
+        if self.config_file:
+            if getattr(self, "_replay_settings", None) and not self._replay_done:
+                env_id = int(self._replay_env_id)
+                idx = int(self._replay_step_counter)
+                self._save_replay_capture(env_id, tag=f"{idx:05d}_capture")
+                self._replay_step_counter += 1
+                if self._replay_step_counter < len(self._replay_settings):
+                    self.apply_replay_setting(
+                        env_id,
+                        self._replay_settings[self._replay_step_counter],
+                    )
+                else:
+                    self._replay_done = True
+                    print(
+                        f"[strategy:replay] done; {idx + 1} captures saved to "
+                        f"{Path(self.base_path) / 'replay_captures'}",
+                        flush=True,
+                    )
+            return
+
         reset_mask = (self.actions == 5) | (self.actions == 6)
         if reset_mask.any() and self.next_scene_id < self.target_scenes:
             env_ids = torch.where(reset_mask)[0].to(device=self.device, dtype=torch.long)
@@ -236,7 +278,11 @@ class VPTEnvAStarStrategy(DirectRLEnv):
         return terminated, truncated
 
     def _reset_idx(self, env_ids: Sequence[int] | None) -> None:
-        """Generate one accepted strategy scene per requested env slot when possible."""
+        """Generate one accepted strategy scene per requested env slot when possible.
+
+        If self.config_file is set, restore the saved scene into env 0 and skip
+        generation entirely (single-env replay mode).
+        """
         t_reset = time.perf_counter()
         if env_ids is None:
             env_ids = self._agent._ALL_INDICES
@@ -247,6 +293,18 @@ class VPTEnvAStarStrategy(DirectRLEnv):
             f"[strategy:reset] env_ids={env_ids.tolist()} "
             f"next_scene={self.next_scene_id}/{self.target_scenes}"
         )
+
+        # Replay short-circuit: load saved scene into env 0; do not run generation.
+        if self.config_file and os.path.exists(self.config_file):
+            t0 = time.perf_counter()
+            self._ensure_base_dims()
+            self.load_env_config_from_json(self.config_file, target_env_id=0)
+            self._replay_step_counter = 0
+            self._log(
+                f"[strategy:reset] replay loaded from {self.config_file} "
+                f"dt={time.perf_counter() - t0:.2f}s"
+            )
+            return
 
         t0 = time.perf_counter()
         self._ensure_base_dims()
@@ -524,19 +582,36 @@ class VPTEnvAStarStrategy(DirectRLEnv):
         captures: list[dict[str, Any]],
         setting: dict[str, Any],
     ) -> bool:
-        """Greedy spacing guard copied from v18 viewpoint selection."""
+        """Greedy spacing guard: enforce min XY distance on BOTH camera and goal
+        positions independently against every already-accepted capture.
+
+        Rail layout places camera+goal symmetric across scene center so their
+        midpoint barely moves between candidates; midpoint distance alone is a
+        weak diversity signal. Per-endpoint distance forces the rail position
+        itself to advance between selections.
+        """
         if not captures:
             return True
-        candidate_midpoint = self._setting_midpoint_xy(setting)
+        cand_cam = self._setting_camera_xy(setting)
+        cand_goal = self._setting_goal_xy(setting)
+        thresh = self.min_selected_pair_distance
         for capture in captures:
-            if torch.norm(candidate_midpoint - self._setting_midpoint_xy(capture["setting"])).item() < (
-                self.min_selected_pair_distance
-            ):
+            prev_cam = self._setting_camera_xy(capture["setting"])
+            prev_goal = self._setting_goal_xy(capture["setting"])
+            if torch.norm(cand_cam - prev_cam).item() < thresh:
+                return False
+            if torch.norm(cand_goal - prev_goal).item() < thresh:
                 return False
         return True
 
+    def _setting_camera_xy(self, setting: dict[str, Any]) -> torch.Tensor:
+        return torch.tensor(setting["camera_pos"][:2], dtype=torch.float32, device=self.device)
+
+    def _setting_goal_xy(self, setting: dict[str, Any]) -> torch.Tensor:
+        return torch.tensor(setting["goal_pos"][:2], dtype=torch.float32, device=self.device)
+
     def _setting_midpoint_xy(self, setting: dict[str, Any]) -> torch.Tensor:
-        """Return camera-goal pair midpoint in XY."""
+        """Return camera-goal pair midpoint in XY (kept for back-compat)."""
         cam = torch.tensor(setting["camera_pos"][:2], dtype=torch.float32, device=self.device)
         goal = torch.tensor(setting["goal_pos"][:2], dtype=torch.float32, device=self.device)
         return (cam + goal) / 2.0
@@ -1296,6 +1371,9 @@ class VPTEnvAStarStrategy(DirectRLEnv):
         with Sdf.ChangeBlock():
             for env_id, scale_map in zip(env_ids, scale_maps):
                 for obj_idx, scale in scale_map.items():
+                    self.applied_scales[(int(env_id), int(obj_idx))] = [
+                        float(scale[0]), float(scale[1]), float(scale[2])
+                    ]
                     prim = stage.GetPrimAtPath(f"/World/envs/env_{env_id}/obs_{obj_idx}")
                     if not prim.IsValid():
                         continue
@@ -1489,11 +1567,13 @@ class VPTEnvAStarStrategy(DirectRLEnv):
         records: list[dict[str, Any]] = []
         active_indices = self._strategy_active_indices()
         occ_idx = active_indices[0]
+        env_id_for_lookup = int(scene_cfg.get("env_id", -1))
 
         def add_record(obj_idx: int, pose: torch.Tensor, scale: list[float], role: str) -> None:
             bbox_dims = []
             if hasattr(self, "vpt_base_dims") and obj_idx < len(self.vpt_base_dims):
                 bbox_dims = (self.vpt_base_dims[obj_idx] * torch.tensor(scale, device=self.device)).detach().cpu().tolist()
+            material_info = self.applied_materials.get((env_id_for_lookup, int(obj_idx)), {})
             records.append({
                 "index": int(obj_idx),
                 "obj_index": int(obj_idx),
@@ -1504,6 +1584,9 @@ class VPTEnvAStarStrategy(DirectRLEnv):
                 "dimensions_bbox": bbox_dims,
                 "z_offset_ratio": 0.0,
                 "shape_id": -1.0,
+                "material_prim_path": material_info.get("material_prim_path", ""),
+                "material_mdl_path": material_info.get("material_mdl_path", ""),
+                "material_name": material_info.get("material_name", ""),
             })
 
         occ_pose = torch.cat([scene_cfg["occluder_pos"], scene_cfg["occluder_quat"]])
@@ -1527,6 +1610,8 @@ class VPTEnvAStarStrategy(DirectRLEnv):
         first = saved_records[0]
         identity = [1.0, 0.0, 0.0, 0.0]
         labels = scene_cfg.get("labels", [])
+        # Make env_id available to nested helpers for applied_* dict lookups.
+        scene_cfg["env_id"] = int(env_id)
         config = {
             "metadata": {
                 "env_id": int(env_id),
@@ -1587,6 +1672,11 @@ class VPTEnvAStarStrategy(DirectRLEnv):
                 "count": len(saved_records),
                 "positions": [record["camera_pos"] for record in saved_records],
             },
+            "scene_randomization": {
+                "floor_material": self.applied_mat_materials.get(int(env_id), {}),
+                "wall_colors": self.applied_wall_colors.get(int(env_id), {}),
+                "lights": self.applied_light_params.get(int(env_id), []),
+            },
         }
 
         config_dir = Path(self.base_path) / "configs"
@@ -1627,6 +1717,304 @@ class VPTEnvAStarStrategy(DirectRLEnv):
         Path(self.base_path).mkdir(parents=True, exist_ok=True)
         with open(self.strategy_labels_json_path, "w") as f:
             json.dump(out, f, indent=2)
+
+    # ============================================================
+    # v18-parity config replay
+    # ============================================================
+    def _material_name(self, mdl_path: str) -> str:
+        if not mdl_path:
+            return ""
+        return os.path.splitext(os.path.basename(mdl_path))[0]
+
+    def _ensure_replay_material(self,
+                                material_info,
+                                material_type: str,
+                                fallback_prim_path: str = "") -> str:
+        if isinstance(material_info, str):
+            material_prim_path = material_info
+            mdl_path = self.material_prim_to_mdl_path.get(material_prim_path, "")
+        elif isinstance(material_info, dict):
+            material_prim_path = material_info.get("material_prim_path", "")
+            mdl_path = material_info.get("material_mdl_path", "")
+        else:
+            material_prim_path = ""
+            mdl_path = ""
+
+        if mdl_path:
+            replay_key = f"{material_type}_{self._material_name(mdl_path)}"
+            replay_key = re.sub(r"[^A-Za-z0-9_]+", "_", replay_key).strip("_")
+            replay_path = f"/World/Looks/strategy_replay_{replay_key}"
+            if replay_path not in self.material_prim_to_mdl_path:
+                tex_scale = (1000.0, 1000.0) if material_type == "mat" else (2.0, 2.0)
+                material_cfg = sim_utils.MdlFileCfg(
+                    mdl_path=mdl_path,
+                    project_uvw=True,
+                    texture_scale=tex_scale,
+                )
+                material_cfg.func(replay_path, material_cfg)
+                self.material_prim_to_mdl_path[replay_path] = mdl_path
+            return replay_path
+
+        if material_prim_path:
+            print(f"⚠️ Replay material has no saved .mdl path; using prim path {material_prim_path}")
+            return material_prim_path
+
+        if fallback_prim_path:
+            print(f"⚠️ Missing replay material metadata for {fallback_prim_path}")
+        return ""
+
+    def _apply_wall_color(self, wall_path: str, wall_data) -> None:
+        if isinstance(wall_data, dict):
+            color = wall_data.get("color")
+            roughness = wall_data.get("roughness")
+            metallic = wall_data.get("metallic")
+        else:
+            color = wall_data
+            roughness = None
+            metallic = None
+        if not color:
+            return
+
+        stage = get_current_stage()
+        prim = stage.GetPrimAtPath(wall_path)
+        if not prim.IsValid():
+            return
+        for child in Usd.PrimRange(prim):
+            if child.GetTypeName() == "Shader":
+                attr = child.GetAttribute("inputs:diffuseColor")
+                if attr:
+                    attr.Set(Gf.Vec3f(float(color[0]), float(color[1]), float(color[2])))
+                if roughness is not None:
+                    rough_attr = child.GetAttribute("inputs:roughness")
+                    if rough_attr:
+                        rough_attr.Set(float(roughness))
+                if metallic is not None:
+                    metal_attr = child.GetAttribute("inputs:metallic")
+                    if metal_attr:
+                        metal_attr.Set(float(metallic))
+
+    def _apply_replay_scale(self,
+                            env_id: int,
+                            obj_idx: int,
+                            scale: list[float],
+                            z_offset_ratio: float,
+                            bbox_dims: list[float]) -> None:
+        if not scale:
+            return
+
+        stage = get_current_stage()
+        prim_path = f"/World/envs/env_{env_id}/obs_{obj_idx}"
+        prim = stage.GetPrimAtPath(prim_path)
+        if not prim.IsValid():
+            print(f"⚠️ Replay scale skipped; invalid prim: {prim_path}")
+            return
+
+        xform = UsdGeom.Xformable(prim)
+        scale_op = None
+        translate_op = None
+        for op in xform.GetOrderedXformOps():
+            if op.GetOpType() == UsdGeom.XformOp.TypeScale:
+                scale_op = op
+            elif op.GetOpType() == UsdGeom.XformOp.TypeTranslate:
+                translate_op = op
+
+        if scale_op is None:
+            scale_op = xform.AddScaleOp(UsdGeom.XformOp.PrecisionDouble)
+        if translate_op is None:
+            translate_op = xform.AddTranslateOp(UsdGeom.XformOp.PrecisionDouble)
+
+        scale_op.Set(Gf.Vec3d(float(scale[0]), float(scale[1]), float(scale[2])))
+
+        # Strategy uses base-pivoted objects with z_offset computed at apply time.
+        # Use saved bbox * z_offset_ratio if provided (v18 parity); else derive from local z helper.
+        if bbox_dims and z_offset_ratio:
+            current_trans = translate_op.Get() or Gf.Vec3d(0, 0, 0)
+            final_z = float(bbox_dims[2]) * float(z_offset_ratio)
+            translate_op.Set(Gf.Vec3d(current_trans[0], current_trans[1], final_z))
+        else:
+            current_trans = translate_op.Get() or Gf.Vec3d(0, 0, 0)
+            local_z = self._strategy_local_z_offset(int(obj_idx), list(scale))
+            translate_op.Set(Gf.Vec3d(current_trans[0], current_trans[1], local_z))
+
+    def load_env_config_from_json(self,
+                                  config_path: str,
+                                  target_env_id: int = 0,
+                                  apply_visuals: bool = True) -> dict:
+        """Load a saved strategy scene config and restore poses + visuals in one env.
+
+        Restores: walls/floor/lights/object materials/scales, occluder/distractor poses,
+        agent pose. Camera object + goal ball are placed using the first saved setting;
+        downstream callers can iterate other settings via `apply_replay_setting()`.
+        """
+        if not os.path.exists(config_path):
+            raise FileNotFoundError(f"Config file not found: {config_path}")
+
+        with open(config_path, "r") as f:
+            config = json.load(f)
+
+        device = self.device
+        env_id = target_env_id.item() if torch.is_tensor(target_env_id) else int(target_env_id)
+        env_ids = torch.tensor([env_id], dtype=torch.long, device=device)
+        zero6 = torch.zeros((1, 6), device=device)
+
+        def tensor_pose(entity: dict) -> torch.Tensor:
+            pos = entity["position"]
+            quat = entity.get("orientation", [1.0, 0.0, 0.0, 0.0])
+            return torch.tensor([list(pos) + list(quat)], dtype=torch.float32, device=device)
+
+        # 1) Place agent at saved pose.
+        agent_pose = tensor_pose(config["agent"])
+        self._agent.write_root_com_pose_to_sim(agent_pose, env_ids)
+        self._agent.write_root_com_velocity_to_sim(zero6, env_ids)
+
+        # 2) Place goal + camera object at first saved setting (caller can iterate).
+        strategy_scene = config.get("strategy_scene", {})
+        settings_list = strategy_scene.get("settings", [])
+        identity = [1.0, 0.0, 0.0, 0.0]
+        if settings_list:
+            first_setting = settings_list[0]
+            goal_pose = torch.tensor(
+                [list(first_setting["goal_pos"]) + identity],
+                dtype=torch.float32, device=device,
+            )
+            camera_pose = torch.tensor(
+                [list(first_setting["camera_pos"]) + identity],
+                dtype=torch.float32, device=device,
+            )
+        else:
+            goal_pose = tensor_pose(config["goal_ball"])
+            camera_pose = tensor_pose(config["camera_object"])
+        self._goal.write_root_com_pose_to_sim(goal_pose, env_ids)
+        self._goal.write_root_com_velocity_to_sim(zero6, env_ids)
+        self._camera_obj.write_root_com_pose_to_sim(camera_pose, env_ids)
+        self._camera_obj.write_root_com_velocity_to_sim(zero6, env_ids)
+
+        # 3) Place active VPT objects (occluder + distractors) per saved metadata.
+        vpt_cfg = config.get("vpt_objects", {})
+        vpt_state = torch.zeros((1, self.num_objs, 7), device=device)
+        vpt_state[:, :, 0:3] = self.storage_position
+        vpt_state[:, :, 3] = 1.0
+        scale_map: dict[int, list[float]] = {}
+
+        for obj_data in vpt_cfg.get("objects", []):
+            obj_idx = int(obj_data.get("index", obj_data.get("obj_index", -1)))
+            if obj_idx < 0 or obj_idx >= self.num_objs:
+                continue
+            vpt_state[0, obj_idx, :3] = torch.tensor(
+                obj_data["position"], dtype=torch.float32, device=device)
+            vpt_state[0, obj_idx, 3:7] = torch.tensor(
+                obj_data.get("orientation", identity),
+                dtype=torch.float32, device=device)
+            scale = obj_data.get("applied_scale", [1.0, 1.0, 1.0])
+            scale_map[obj_idx] = list(scale)
+            bbox_dims = obj_data.get("dimensions_bbox", [])
+            z_offset_ratio = float(obj_data.get("z_offset_ratio", 0.0))
+            if apply_visuals:
+                self._apply_replay_scale(
+                    env_id=env_id,
+                    obj_idx=obj_idx,
+                    scale=list(scale),
+                    z_offset_ratio=z_offset_ratio,
+                    bbox_dims=bbox_dims,
+                )
+                material_path = self._ensure_replay_material(
+                    obj_data,
+                    material_type="vpt",
+                    fallback_prim_path=f"/World/envs/env_{env_id}/obs_{obj_idx}",
+                )
+                if material_path:
+                    sim_utils.bind_visual_material(
+                        f"/World/envs/env_{env_id}/obs_{obj_idx}", material_path)
+
+        self._vpt_objects.write_object_pose_to_sim(vpt_state, env_ids)
+        self._vpt_objects.write_object_velocity_to_sim(
+            torch.zeros((1, self.num_objs, 6), device=device), env_ids)
+
+        # 4) Floor / wall / light replay.
+        scene_random = config.get("scene_randomization", {})
+        if apply_visuals:
+            floor_material = self._ensure_replay_material(
+                scene_random.get("floor_material", {}),
+                material_type="mat",
+                fallback_prim_path=f"/World/envs/env_{env_id}/mat",
+            )
+            if floor_material:
+                sim_utils.bind_visual_material(f"/World/envs/env_{env_id}/mat", floor_material)
+
+            for wall_name, wall_data in scene_random.get("wall_colors", {}).items():
+                self._apply_wall_color(
+                    f"/World/envs/env_{env_id}/{wall_name}", wall_data)
+
+            stage = get_current_stage()
+            for light_info in scene_random.get("lights", []):
+                suffix = light_info.get("prim_path_suffix", "Light_A")
+                light_path = f"/World/envs/env_{env_id}/{suffix}"
+                prim = stage.GetPrimAtPath(light_path)
+                if not prim.IsValid():
+                    continue
+                if not light_info.get("active", True):
+                    prim.GetAttribute("inputs:intensity").Set(0.0)
+                    continue
+                prim.GetAttribute("inputs:intensity").Set(float(light_info["intensity"]))
+                prim.GetAttribute("inputs:radius").Set(float(light_info["radius"]))
+                prim.GetAttribute("inputs:enableColorTemperature").Set(True)
+                prim.GetAttribute("inputs:colorTemperature").Set(
+                    float(light_info["color_temperature"]))
+                pos = light_info["position"]
+                xform = UsdGeom.Xformable(prim)
+                translate_op = None
+                for op in xform.GetOrderedXformOps():
+                    if op.GetOpType() == UsdGeom.XformOp.TypeTranslate:
+                        translate_op = op
+                        break
+                if translate_op is None:
+                    translate_op = xform.AddTranslateOp()
+                translate_op.Set(Gf.Vec3d(float(pos[0]), float(pos[1]), float(pos[2])))
+
+        # Settle so cameras see restored state.
+        self.scene.write_data_to_sim()
+        for _ in range(3):
+            self.sim.step(render=False)
+        self.scene.update(dt=self.step_dt)
+        self._settle_and_update_cameras(max(1, min(self.settle_steps, 10)))
+
+        if not scene_random and self.verbose >= 1:
+            print("⚠️ Loaded an older config without scene_randomization metadata; visual replay is layout-only.")
+        if self.verbose >= 1:
+            print(f"✅ Loaded strategy environment configuration from: {config_path}")
+            print(f"   → Env {env_id}, settings={len(settings_list)}")
+
+        # Cache for downstream replay iteration.
+        self._replay_settings = settings_list
+        self._replay_env_id = env_id
+        self._replay_done = False
+        return config
+
+    def apply_replay_setting(self, env_id: int, setting: dict[str, Any]) -> None:
+        """Move goal + camera object to a saved setting (used to iterate replay)."""
+        device = self.device
+        ids = torch.tensor([env_id], dtype=torch.long, device=device)
+        identity = torch.tensor([1.0, 0.0, 0.0, 0.0], device=device)
+        goal_pos = torch.tensor(setting["goal_pos"], dtype=torch.float32, device=device)
+        cam_pos = torch.tensor(setting["camera_pos"], dtype=torch.float32, device=device)
+        goal_pose = torch.cat([goal_pos, identity]).unsqueeze(0)
+        cam_pose = torch.cat([cam_pos, identity]).unsqueeze(0)
+        zero6 = torch.zeros((1, 6), device=device)
+        self._goal.write_root_com_pose_to_sim(goal_pose, ids)
+        self._goal.write_root_com_velocity_to_sim(zero6, ids)
+        self._camera_obj.write_root_com_pose_to_sim(cam_pose, ids)
+        self._camera_obj.write_root_com_velocity_to_sim(zero6, ids)
+        self._orient_camera_to_goal(env_id)
+        self._settle_and_update_cameras(max(1, min(self.settle_steps, 10)))
+
+    def _save_replay_capture(self, env_id: int, tag: str) -> str:
+        """Write current agent RGB view to a replay capture PNG."""
+        rgb = self._rgb_tiled_camera.data.output["rgb"][env_id]
+        out_dir = Path(self.base_path) / "replay_captures"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / f"step_{tag}.png"
+        self._write_rgb_png(out_path, rgb)
+        return str(out_path)
 
     def _strategy_statistics(self) -> dict[str, Any]:
         """Compute aggregate scene and label counts for saved records."""
@@ -1769,7 +2157,26 @@ class VPTEnvAStarStrategy(DirectRLEnv):
         if not material_pool:
             return
         for prim_path in prim_paths:
-            sim_utils.bind_visual_material(prim_path, random.choice(material_pool))
+            chosen = random.choice(material_pool)
+            sim_utils.bind_visual_material(prim_path, chosen)
+            mdl_path = self.material_prim_to_mdl_path.get(chosen, "")
+            mat_name = os.path.splitext(os.path.basename(mdl_path))[0] if mdl_path else ""
+            material_info = {
+                "material_prim_path": chosen,
+                "material_mdl_path": mdl_path,
+                "material_name": mat_name,
+            }
+            env_match = re.search(r"env_(\d+)", prim_path)
+            if not env_match:
+                continue
+            env_idx = int(env_match.group(1))
+            if material_type == "mat":
+                self.applied_mat_materials[env_idx] = material_info
+            else:
+                obj_match = re.search(r"obs_(\d+)", prim_path)
+                if obj_match:
+                    obj_idx = int(obj_match.group(1))
+                    self.applied_materials[(env_idx, obj_idx)] = material_info
 
     def randomize_shape_color(self,
                               prim_path_expr: str | list,
@@ -1799,6 +2206,21 @@ class VPTEnvAStarStrategy(DirectRLEnv):
 
                 rand_roughness = random.random()
                 rand_metallic = random.random()
+
+                # Record per-env wall color for replay metadata.
+                env_match = re.search(r"env_(\d+)", prim_path)
+                wall_name_match = re.search(r"/(\w+_wall)$", prim_path)
+                if env_match and wall_name_match:
+                    env_idx_w = int(env_match.group(1))
+                    wall_name = wall_name_match.group(1)
+                    entry = {
+                        "color": [float(rand_color[0]), float(rand_color[1]), float(rand_color[2])],
+                    }
+                    if random_roughness:
+                        entry["roughness"] = float(rand_roughness)
+                    if random_metallic:
+                        entry["metallic"] = float(rand_metallic)
+                    self.applied_wall_colors.setdefault(env_idx_w, {})[wall_name] = entry
 
                 # Helper to set attribute on a shader spec
                 def _set_shader_attr(shader_spec, attr_name, value, type_name):
@@ -2062,6 +2484,7 @@ class VPTEnvAStarStrategy(DirectRLEnv):
     def randomize_spherical_lights(self, prim_paths, random_light_off=False):
         """
         Randomizes Spherical Lights with a minimum separation distance check.
+        Records applied light params per env into self.applied_light_params for replay.
         """
         stage = get_current_stage()
 
@@ -2077,6 +2500,16 @@ class VPTEnvAStarStrategy(DirectRLEnv):
             num_to_keep = random.randint(1, len(prim_paths))
             active_paths = set(random.sample(prim_paths, num_to_keep))
 
+        # Reset applied params for envs being randomized so saves stay current.
+        seen_envs: set[int] = set()
+        for path in prim_paths:
+            match_env = re.search(r"env_(\d+)", path)
+            if match_env:
+                env_idx_clear = int(match_env.group(1))
+                if env_idx_clear not in seen_envs:
+                    self.applied_light_params[env_idx_clear] = []
+                    seen_envs.add(env_idx_clear)
+
         for path in prim_paths:
             prim = stage.GetPrimAtPath(path)
             if not prim.IsValid():
@@ -2088,17 +2521,21 @@ class VPTEnvAStarStrategy(DirectRLEnv):
                 continue
             env_idx = int(match.group(1))
 
+            suffix_match = re.search(r"env_\d+/(.+)$", path)
+            suffix = suffix_match.group(1) if suffix_match else "Light_A"
+
             # Initialize position list for this environment if new
             if env_idx not in env_light_positions:
                 env_light_positions[env_idx] = []
 
-            # (Optional) Extract origin if needed for global coords,
-            # but currently using local offsets based on your previous snippet.
-            # origin_data = self.scene.env_origins[env_idx].tolist()
-
             # 2. INTENSITY
             if path not in active_paths:
                 prim.GetAttribute("inputs:intensity").Set(0.0)
+                self.applied_light_params.setdefault(env_idx, []).append({
+                    "prim_path_suffix": suffix,
+                    "active": False,
+                    "intensity": 0.0,
+                })
                 continue
 
             rand_intensity = random.uniform(40_000.0, 75_000.0)
@@ -2107,7 +2544,6 @@ class VPTEnvAStarStrategy(DirectRLEnv):
             # 3. POSITION WITH SEPARATION CHECK
             rand_z_offset = random.uniform(7.5, 15.0)
 
-            # Define the allowed magnitude ranges (percentages of center_to_boundary)
             valid_ranges = [
                 (0.1, 0.3),  # Inner ring
                 (0.7, 0.9)  # Outer corners
@@ -2117,37 +2553,26 @@ class VPTEnvAStarStrategy(DirectRLEnv):
             max_retries = 20
 
             for _ in range(max_retries):
-                # GENERATE X
-                # 1. Pick a range (Inner or Outer)
                 rx_min, rx_max = random.choice(valid_ranges)
-                # 2. Sample magnitude and apply random sign
-                mag_x = random.uniform(rx_min,
-                                       rx_max) * self.center_to_boundary
+                mag_x = random.uniform(rx_min, rx_max) * self.center_to_boundary
                 cand_x = mag_x * random.choice([-1, 1])
 
-                # GENERATE Y
-                # 1. Pick a range (Inner or Outer)
                 ry_min, ry_max = random.choice(valid_ranges)
-                # 2. Sample magnitude and apply random sign
-                mag_y = random.uniform(ry_min,
-                                       ry_max) * self.center_to_boundary
+                mag_y = random.uniform(ry_min, ry_max) * self.center_to_boundary
                 cand_y = mag_y * random.choice([-1, 1])
 
                 collision = False
                 for (ex, ey) in env_light_positions[env_idx]:
-                    # Euclidean distance check
                     dist = math.hypot(cand_x - ex, cand_y - ey)
                     if dist < min_separation:
                         collision = True
                         break
 
                 if not collision:
-                    break  # Found a valid spot
+                    break
 
-            # Register this spot so the next light in this env avoids it
             env_light_positions[env_idx].append((cand_x, cand_y))
 
-            # Explicit float cast for safety
             final_x = float(cand_x)
             final_y = float(cand_y)
             final_z = float(rand_z_offset)
@@ -2175,9 +2600,15 @@ class VPTEnvAStarStrategy(DirectRLEnv):
             prim.GetAttribute("inputs:enableColorTemperature").Set(True)
             rand_temp = random.uniform(2000.0, 8000.0)
             prim.GetAttribute("inputs:colorTemperature").Set(rand_temp)
-            # print(
-            #     f"Position of Light = {new_pos}, Temp = {rand_temp}, Intensity = {rand_intensity}, Radius = {rand_radius}"
-            # )
+
+            self.applied_light_params.setdefault(env_idx, []).append({
+                "prim_path_suffix": suffix,
+                "active": True,
+                "intensity": float(rand_intensity),
+                "position": [final_x, final_y, final_z],
+                "radius": float(rand_radius),
+                "color_temperature": float(rand_temp),
+            })
 
     def _count_red_pixels(self, img: torch.Tensor) -> int:
         """Count exact/near red semantic pixels in uint8 or float semantic output."""
