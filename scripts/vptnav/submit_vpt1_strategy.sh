@@ -10,12 +10,12 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 JOB_DIR="${REPO_ROOT}/VPTnav_code/cube_game/job_array/normal_vptnav"
 
 BASE_PATH="${BASE_PATH:-/users/arock3/scratch/VPT1_DATA/thesis/v18_vpt_1_strategy}"
-NUM_GPUS="${NUM_GPUS:-8}"
+NUM_GPUS="${NUM_GPUS:-2}"
 TASK="${TASK:-VPT-v18-strategy}"
 NUM_NODES="${NUM_NODES:-10}"
 NUM_ENVS="${NUM_ENVS:-32}"
 TIME_LIMIT="${TIME_LIMIT:-03:00:00}"
-MEMORY="${MEMORY:-40G}"
+MEMORY="${MEMORY:-50G}"
 AGENT_SCRIPT="${AGENT_SCRIPT:-/mnt/VPT/VPTnav_code/cube_game/scripts/vptnav/keyboard_agent.py}"
 
 # Strategy tuning defaults (override via env at submit time).
